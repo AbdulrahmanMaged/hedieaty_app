@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:hedieaty_app/pages/new/newEvent.dart';
-import 'package:hedieaty_app/pages/new/newGiftList.dart';
+import 'package:hedieaty_app/pages/sidePages/newEvent.dart';
+import 'package:hedieaty_app/pages/sidePages/edit_or_new_gift.dart';
+import 'package:hedieaty_app/pages/widgets/bottom_nav_bar.dart';
+import 'package:hedieaty_app/pages/widgets/top_home_bar.dart'; // Import the top bar file
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -10,70 +12,45 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  // Method to handle the selection from the dropdown menu
+  int _currentIndex = 0;
+
+  // Method to handle navigation from the bottom nav bar
+  void _onNavBarTapped(int index) {
+    setState(() {
+      _currentIndex = index;
+    });
+
+    if (index == 1) {
+      //Navigator.push(context, MaterialPageRoute(builder: (context) => const AddFriendPage()));
+    } else if (index == 4) {
+      //Navigator.push(context, MaterialPageRoute(builder: (context) => const ProfilePage()));
+    } else if (index == 2) {
+      //Navigator.push(context, MaterialPageRoute(builder: (context) => const MyGiftsPage()));
+    } else if (index == 3) {
+      //Navigator.push(context, MaterialPageRoute(builder: (context) => const EventListPage()));
+    }
+
+  }
+
+  // Method to handle the selection from the top bar dropdown menu
   void _onMenuSelected(String value) {
     if (value == 'new_event') {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const HomePage()),
-      );
-    } else if (value == 'new_list') {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const HomePage()),
-      );
+      //Navigator.push(context, MaterialPageRoute(builder: (context) => const NewEventPage()));
+    } else if (value == 'edit_or_new_gift') {
+      //Navigator.push(context, MaterialPageRoute(builder: (context) => const NewGiftListPage()));
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.blue,
-        title: const Text('Home Page'),
-        centerTitle: true,
-        actions: [
-          TextButton(
-            onPressed: () {
-              showMenu(
-                context: context,
-                position: const RelativeRect.fromLTRB(
-                    100, 80, 0, 0), // Adjust position if needed
-                items: [
-                  PopupMenuItem<String>(
-                    value: 'new_event',
-                    child: const Text('New Event'),
-                    onTap: () => _onMenuSelected('new_event'),
-                  ),
-                  PopupMenuItem<String>(
-                    value: 'new_list',
-                    child: const Text('New Gift List'),
-                    onTap: () => _onMenuSelected('new_list'),
-                  ),
-                ],
-              );
-            },
-            child: const Row(
-              children: [
-                Text(
-                  'Create Your Own Event/List',
-                  style: TextStyle(color: Colors.white),
-                ),
-                SizedBox(width: 4), // Space between text and arrow
-                Icon(
-                  Icons.arrow_drop_down,
-                  color: Colors.white,
-                ),
-              ],
-            ),
-          ),
-        ],
+      appBar: TopHomeBar(onMenuSelected: _onMenuSelected),
+      body: const Center(
+        child: Text('Home Page Content Here'),
       ),
-      body: Center(
-        child: TextButton(
-          onPressed: () {},
-          child: const Text('Next'),
-        ),
+      bottomNavigationBar: BottomNavBar(
+        currentIndex: _currentIndex,
+        onTap: _onNavBarTapped,
       ),
     );
   }
