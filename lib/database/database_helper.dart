@@ -39,7 +39,6 @@ class DatabaseHelper {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
         date TEXT NOT NULL,
-        location TEXT,
         description TEXT,
         user_id INTEGER NOT NULL,
         FOREIGN KEY (user_id) REFERENCES Users (id)
