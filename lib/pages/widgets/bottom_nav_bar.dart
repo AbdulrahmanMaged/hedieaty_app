@@ -20,18 +20,23 @@ class BottomNavBar extends StatelessWidget {
       items: const [
         BottomNavigationBarItem(
           icon: Icon(Icons.home),
+          label: 'Home'
         ),
         BottomNavigationBarItem(
           icon: Icon(Icons.person_add),
+          label: 'Add'
         ),
         BottomNavigationBarItem(
           icon: Icon(Icons.card_giftcard),
+          label: 'My Gifts'
         ),
         BottomNavigationBarItem(
           icon: Icon(Icons.event),
+          label: 'Events'
         ),
         BottomNavigationBarItem(
           icon: Icon(Icons.person),
+          label: 'Profile'
         ),
       ],
     );

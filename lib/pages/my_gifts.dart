@@ -1,18 +1,17 @@
 import 'package:flutter/material.dart';
 
-class Profile extends StatelessWidget {
-  const Profile({Key? key, required this.title}) : super(key: key);
-  final String title;
+class MyGifts extends StatelessWidget {
+  const MyGifts({super.key});
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(title),
+        title: const Text('My Gifts'),
       ),
       body: Center(
         child: TextButton(
           onPressed: () {},
-          child: const Text('Next'),
+          child: const Text('Gifts here'),
         ),
       ),
     );

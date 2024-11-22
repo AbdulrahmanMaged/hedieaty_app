@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:hedieaty_app/pages/add_friends.dart';
+import 'package:hedieaty_app/pages/my_gifts.dart';
+import 'package:hedieaty_app/pages/my_profile.dart';
 import 'package:hedieaty_app/pages/sidePages/newEvent.dart';
 import 'package:hedieaty_app/pages/sidePages/edit_or_new_gift.dart';
 import 'package:hedieaty_app/pages/widgets/bottom_nav_bar.dart';
@@ -21,13 +24,13 @@ class _HomePageState extends State<HomePage> {
     });
 
     if (index == 1) {
-      //Navigator.push(context, MaterialPageRoute(builder: (context) => const AddFriendPage()));
+      Navigator.push(context, MaterialPageRoute(builder: (context) => const AddFriends()));
     } else if (index == 4) {
-      //Navigator.push(context, MaterialPageRoute(builder: (context) => const ProfilePage()));
+      Navigator.push(context, MaterialPageRoute(builder: (context) => const MyProfile()));
     } else if (index == 2) {
-      //Navigator.push(context, MaterialPageRoute(builder: (context) => const MyGiftsPage()));
+      Navigator.push(context, MaterialPageRoute(builder: (context) => const MyGifts()));
     } else if (index == 3) {
-      //Navigator.push(context, MaterialPageRoute(builder: (context) => const EventListPage()));
+      Navigator.push(context, MaterialPageRoute(builder: (context) => const MyProfile()));
     }
 
   }
