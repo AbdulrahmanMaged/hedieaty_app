@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:hedieaty_app/pages/home.dart';
+import 'package:hedieaty_app/pages/home_page.dart';
 
 void main() {
   runApp(const MainApp());
