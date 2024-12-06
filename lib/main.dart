@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:hedieaty_app/database/database_helper.dart';
 import 'package:hedieaty_app/pages/home_page.dart';
 
-void main() {
+void main() async{
+  WidgetsFlutterBinding.ensureInitialized();
+  final dbHelper = DatabaseHelper.instance;
+  //await dbHelper.insertDummyUsers(); // Add dummy data
   runApp(const MainApp());
 }
 

@@ -29,7 +29,7 @@ class DatabaseHelper {
       CREATE TABLE Users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
-        Events TEXT UNIQUE NOT NULL,
+        email TEXT UNIQUE NOT NULL,
         preferences TEXT
       );
     ''');
@@ -116,6 +116,31 @@ Future<List<Map<String, dynamic>>> getFriends(int userId) async {
   final db = await database;
   return db.query('Friends', where: 'user_id = ?', whereArgs: [userId]);
 }
+
+
+// inserting dummy users 
+Future<void> insertDummyUsers() async {
+  final db = await database;
+
+  await db.insert('Users', {
+    'name': 'Alice',
+    'email': 'alice@example.com',
+    'preferences': 'Likes books and music',
+  });
+
+  await db.insert('Users', {
+    'name': 'Bob',
+    'email': 'bob@example.com',
+    'preferences': 'Loves sports and technology',
+  });
+
+  await db.insert('Users', {
+    'name': 'Charlie',
+    'email': 'charlie@example.com',
+    'preferences': 'Enjoys cooking and travel',
+  });
+}
+
 
 
 }
