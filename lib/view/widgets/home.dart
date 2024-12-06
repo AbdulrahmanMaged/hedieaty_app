@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:hedieaty_app/database/database_helper.dart';
 import 'package:hedieaty_app/database/user.dart';
-import 'package:hedieaty_app/pages/add_friends.dart';
-import 'package:hedieaty_app/pages/my_gifts.dart';
-import 'package:hedieaty_app/pages/my_profile.dart';
-import 'package:hedieaty_app/pages/widgets/bottom_nav_bar.dart';
-import 'package:hedieaty_app/pages/widgets/top_home_bar.dart';
+import 'package:hedieaty_app/view/screens/add_friends.dart';
+import 'package:hedieaty_app/view/screens/my_gifts.dart';
+import 'package:hedieaty_app/view/screens/my_profile.dart';
+import 'package:hedieaty_app/view/widgets/bottom_nav_bar.dart';
+import 'package:hedieaty_app/view/widgets/top_home_bar.dart';
 
 class Home extends StatefulWidget {
   const Home({super.key});
