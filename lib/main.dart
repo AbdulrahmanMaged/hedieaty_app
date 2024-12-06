@@ -1,8 +1,7 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:hedieaty_app/database/database_helper.dart';
-import 'package:hedieaty_app/view/screens/home_page.dart';
-import 'package:hedieaty_app/view/screens/login_signup.dart';
+import 'package:hedieaty_app/services/database/local/database_helper.dart';
+import 'package:hedieaty_app/view/screens/welcomeScreen.dart';
 
 import 'firebase_options.dart';
 
@@ -24,7 +23,7 @@ class MainApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: LoginSignupScreen(),
+      home: WelcomeScreen(),
     );
   }
 }

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class TopHomeBar extends StatelessWidget implements PreferredSizeWidget {
   final Function(String) onMenuSelected;
@@ -8,29 +10,63 @@ class TopHomeBar extends StatelessWidget implements PreferredSizeWidget {
     required this.onMenuSelected,
   });
 
+  // Fetch user first name from Firestore
+  Future<String> _getUserFirstName() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      // Get the current user's document from Firestore
+      DocumentSnapshot userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+
+      // Return the first name (assuming the field is 'firstName')
+      if (userDoc.exists) {
+        return userDoc['firstName'] ?? 'Guest'; // Default to 'Guest' if no firstName
+      }
+    }
+    return 'User'; // Default fallback if user is not logged in
+  }
+
   @override
   Widget build(BuildContext context) {
     return AppBar(
       backgroundColor: Colors.purple[600],
-      title: Row(
-        mainAxisAlignment: MainAxisAlignment.start,
-        children: [
-          // Gift Icon
-          const Icon(
-            Icons.card_giftcard, // You can change the icon as needed
-            color: Colors.white,
-            size: 24, // Adjust size as needed
-          ),
-          const SizedBox(width: 8), // Space between the icon and text
-          const Text(
-            'Hedieaty',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-          ),
-        ],
+      title: FutureBuilder<String>(
+        future: _getUserFirstName(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const CircularProgressIndicator(); // Loading state
+          }
+
+          if (snapshot.hasError) {
+            return const Text(
+              'Error loading name',
+              style: TextStyle(color: Colors.white),
+            ); // Handle error if something goes wrong
+          }
+
+          // Display the first name fetched from Firestore
+          return Row(
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: [
+              const Icon(
+                Icons.card_giftcard,
+                color: Colors.white,
+                size: 24,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                snapshot.data ?? 'Hedieaty', // Default to 'Hedieaty' if no name found
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          );
+        },
       ),
       actions: [
         Padding(
