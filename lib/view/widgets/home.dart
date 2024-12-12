@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hedieaty_app/services/database/local/database_helper.dart';
-import 'package:hedieaty_app/view/screens/add_friends.dart';
+import 'package:hedieaty_app/view/screens/friends.dart';
 import 'package:hedieaty_app/view/screens/my_gifts.dart';
 import 'package:hedieaty_app/view/screens/my_profile.dart';
 import 'package:hedieaty_app/view/widgets/bottom_nav_bar.dart';
@@ -72,16 +72,16 @@ class _HomeState extends State<Home> {
 
     if (index == 1) {
       Navigator.push(context,
-          MaterialPageRoute(builder: (context) => const AddFriends()));
+          MaterialPageRoute(builder: (context) =>  AddFriends()));
     } else if (index == 4) {
       Navigator.push(context,
-          MaterialPageRoute(builder: (context) => const MyProfile()));
+          MaterialPageRoute(builder: (context) =>  MyProfile()));
     } else if (index == 2) {
       Navigator.push(
-          context, MaterialPageRoute(builder: (context) => const MyGifts()));
+          context, MaterialPageRoute(builder: (context) =>  MyGifts()));
     } else if (index == 3) {
       Navigator.push(context,
-          MaterialPageRoute(builder: (context) => const MyProfile()));
+          MaterialPageRoute(builder: (context) =>  MyProfile()));
     }
   }
 

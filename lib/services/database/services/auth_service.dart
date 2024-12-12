@@ -1,12 +1,15 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-
+import '../local/database_helper.dart';
 import '../../../view/screens/home_page.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final DatabaseHelper _dbHelper = DatabaseHelper.instance;
+
+
 
   // Sign-Up Method
   Future<void> signUp({
@@ -36,6 +39,16 @@ class AuthService {
         'userID': generatedID,
         'createdAt': Timestamp.now(),
       });
+
+      // 4. Save user information in SQLite
+      await _dbHelper.insertUser({
+        'id': generatedID,
+        'firstName': firstName,
+        'lastName': lastName,
+        'email': email,
+        'preferences': preferences,
+      });
+
 
       // Show success message
       ScaffoldMessenger.of(context).showSnackBar(
@@ -86,10 +99,6 @@ class AuthService {
     password: password,
     );
 
-    // Show success message
-    ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(content: Text('Login Successful!')),
-    );
     // Navigate to HomePage
     Navigator.pushReplacement(
       context,

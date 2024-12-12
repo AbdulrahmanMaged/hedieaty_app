@@ -9,6 +9,8 @@ class DatabaseHelper {
 
   static Database? _database;
 
+
+
   Future<Database> get database async {
     if (_database != null) return _database!;
     _database = await _initDatabase();
@@ -27,11 +29,13 @@ class DatabaseHelper {
   Future<void> _onCreate(Database db, int version) async {
     await db.execute('''
       CREATE TABLE Users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
+        id TEXT PRIMARY KEY,
+        firstName TEXT NOT NULL,
+        lastName TEXT NOT NULL,
         email TEXT UNIQUE NOT NULL,
         preferences TEXT
-      );
+        );
+
     ''');
 
     await db.execute('''
@@ -70,9 +74,13 @@ class DatabaseHelper {
   }
 
 // Insert a user
-Future<int> insertUser(Map<String, dynamic> user) async {
+Future<void> insertUser(Map<String, dynamic> user) async {
   final db = await database;
-  return db.insert('Users', user);
+  await db.insert(
+    'users',
+    user,
+    conflictAlgorithm: ConflictAlgorithm.replace,
+  );
 }
 
 // Get all users
@@ -81,11 +89,27 @@ Future<List<Map<String, dynamic>>> getUsers() async {
   return db.query('Users');
 }
 
+  Future<List<Map<String, dynamic>>> getUsersById(String userId) async {
+    final db = await database;
+    return db.query(
+      'Users',
+      where: 'userID = ?', // stores userID
+      whereArgs: [userId],
+    );
+  }
+
+
+
 // Insert an event
 Future<int> insertEvent(Map<String, dynamic> event) async {
   final db = await database;
   return db.insert('Events', event);
 }
+// clear a user
+  Future<void> clearUsers() async {
+    final db = await database;
+    await db.delete('users');
+  }
 
 // Get events by user ID
 Future<List<Map<String, dynamic>>> getEventsByUserId(int userId) async {
@@ -116,31 +140,5 @@ Future<List<Map<String, dynamic>>> getFriends(int userId) async {
   final db = await database;
   return db.query('Friends', where: 'user_id = ?', whereArgs: [userId]);
 }
-
-
-// inserting dummy users 
-Future<void> insertDummyUsers() async {
-  final db = await database;
-
-  await db.insert('Users', {
-    'name': 'Alice',
-    'email': 'alice@example.com',
-    'preferences': 'Likes books and music',
-  });
-
-  await db.insert('Users', {
-    'name': 'Bob',
-    'email': 'bob@example.com',
-    'preferences': 'Loves sports and technology',
-  });
-
-  await db.insert('Users', {
-    'name': 'Charlie',
-    'email': 'charlie@example.com',
-    'preferences': 'Enjoys cooking and travel',
-  });
-}
-
-
 
 }
