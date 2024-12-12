@@ -1,19 +1,11 @@
 import 'package:flutter/material.dart';
+import '../widgets/profile.dart'; // Import the ProfilePage widget
 
 class MyProfile extends StatelessWidget {
-  const MyProfile({super.key});
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('profile screen'),
-      ),
-      body: Center(
-        child: TextButton(
-          onPressed: () {},
-          child: const Text('Next'),
-        ),
-      ),
+      body: ProfileWidget(), // Use the ProfilePage widget directly
     );
   }
 }
