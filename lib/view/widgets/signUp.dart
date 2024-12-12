@@ -1,115 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../services/database/services/auth_service.dart';
 import '../screens/home_page.dart'; // Import your home page
 import '../screens/welcomeScreen.dart'; // Import the Welcome Screen
+import '../../services/database/services/auth_service.dart';
 
-class signUpScreen extends StatefulWidget {
+class SignUpScreen extends StatefulWidget {
   @override
-  _signUpScreenState createState() => _signUpScreenState();
+  _SignUpScreenState createState() => _SignUpScreenState();
 }
 
-class _signUpScreenState extends State<signUpScreen> {
-  bool isLoading = false; // Loading state
+class _SignUpScreenState extends State<SignUpScreen> {
   final _formKey = GlobalKey<FormState>();
   String? firstName;
   String? lastName;
-  String? phoneNum;
-  String? gender;
   String? preferences;
   String? email;
   String? password;
   bool _isPasswordVisible = false;
-  String? _phoneErrorMessage;
-
-  // Instance of AuthService to handle Firebase logic
-  final AuthService _authService = AuthService();
-
-// Method to handle form submission
-  void _submitAuthForm() async {
-    final isValid = _formKey.currentState!.validate();
-    FocusScope.of(context).unfocus();
-
-    if (isValid) {
-      _formKey.currentState!.save();
-
-      setState(() {
-        isLoading = true; // Show loading indicator
-      });
-
-      // Call signUp from AuthService to handle Firebase Authentication and Firestore logic
-      try {
-        await _authService.signUp(
-          firstName: firstName!,
-          lastName: lastName!,
-          phoneNum: phoneNum!,
-          gender: gender!,
-          preferences: preferences!,
-          email: email!,
-          password: password!,
-          context: context,
-        );
-
-        setState(() {
-          isLoading = false; // Hide loading indicator
-        });
-
-        // Success
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Account Created Successfully!')),
-        );
-
-        // Delay navigation until the snack bar is shown
-        Future.delayed(Duration(seconds: 2), () {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => HomePage()),
-          );
-        });
-      } catch (e) {
-        setState(() {
-          isLoading = false; // Hide loading indicator in case of error
-        });
-        // Show error message if the sign-up fails
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Error: $e")),
-        );
-      }
-    } else {
-      // Show message if the form is invalid
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Check the invalid fields and try again')),
-      );
-    }
-  }
-
-
-  // Method to check phone number validity
-  void _onPhoneNumberChanged(String phoneNumber) {
-    setState(() {
-      _phoneErrorMessage = null; // Reset the error message
-    });
-
-    if (phoneNumber.isNotEmpty) {
-      // Perform custom validation if needed
-      bool isValid = _validatePhoneNumber(phoneNumber);
-      if (!isValid) {
-        setState(() {
-          _phoneErrorMessage = 'Invalid phone number. Please enter a valid number.';
-        });
-      } else {
-        setState(() {
-          phoneNum = phoneNumber;
-        });
-      }
-    }
-  }
-
-  // Custom validation for phone number
-  bool _validatePhoneNumber(String phoneNumber) {
-    // You can use any validation logic here. For example:
-    return phoneNumber.length > 9; // Example validation for phone number length
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -205,55 +112,6 @@ class _signUpScreenState extends State<signUpScreen> {
                                   ),
                                 ),
                                 SizedBox(height: 16),
-                                // Phone Number (without country code)
-                                TextFormField(
-                                  key: ValueKey('phoneNumber'),
-                                  keyboardType: TextInputType.phone,
-                                  onChanged: _onPhoneNumberChanged,
-                                  validator: (value) {
-                                    if (value!.isEmpty) {
-                                      return 'Please enter your phone number.';
-                                    }
-                                    return null;
-                                  },
-                                  decoration: InputDecoration(
-                                    labelText: 'Phone Number',
-                                    prefixIcon: Icon(Icons.phone, color: Colors.purple),
-                                    border: OutlineInputBorder(),
-                                  ),
-                                ),
-                                // Error message for invalid phone number
-                                if (_phoneErrorMessage != null)
-                                  Padding(
-                                    padding: const EdgeInsets.only(top: 8.0),
-                                    child: Text(
-                                      _phoneErrorMessage!,
-                                      style: TextStyle(color: Colors.red, fontSize: 12),
-                                    ),
-                                  ),
-                                SizedBox(height: 16),
-                                // Gender
-                                DropdownButtonFormField<String>(
-                                  value: gender,
-                                  onChanged: (newValue) {
-                                    setState(() {
-                                      gender = newValue;
-                                    });
-                                  },
-                                  items: ['Male', 'Female', 'Rather not say']
-                                      .map((gender) {
-                                    return DropdownMenuItem<String>(
-                                      value: gender,
-                                      child: Text(gender),
-                                    );
-                                  }).toList(),
-                                  decoration: InputDecoration(
-                                    labelText: 'Gender',
-                                    prefixIcon: Icon(Icons.transgender, color: Colors.purple),
-                                    border: OutlineInputBorder(),
-                                  ),
-                                ),
-                                SizedBox(height: 16),
                                 // Preferences
                                 TextFormField(
                                   key: ValueKey('preferences'),
@@ -332,7 +190,24 @@ class _signUpScreenState extends State<signUpScreen> {
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                   ),
-                                  onPressed: _submitAuthForm,
+                                  onPressed: () {
+                                    if (_formKey.currentState!.validate()) {
+                                      _formKey.currentState!.save();
+                                      final authService = AuthService();
+                                      authService.signUp(
+                                        firstName: firstName!,
+                                        lastName: lastName!,
+                                        preferences: preferences!,
+                                        email: email!,
+                                        password: password!,
+                                        context: context,
+                                      );
+                                    } else {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(content: Text('Please fill all fields correctly.')),
+                                      );
+                                    }
+                                  },
                                   child: Text(
                                     'Sign Up',
                                     style: TextStyle(fontSize: 16, color: Colors.white),

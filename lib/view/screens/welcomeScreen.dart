@@ -88,7 +88,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                             context,
                             PageRouteBuilder(
                               pageBuilder: (context, animation, secondaryAnimation) {
-                                return signUpScreen(); // here will be login
+                                return LoginScreen(); // here will be login
                               },
                               transitionsBuilder: (context, animation, secondaryAnimation, child) {
                                 const begin = Offset(0.0, 1.0);
@@ -133,7 +133,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                             context,
                             PageRouteBuilder(
                               pageBuilder: (context, animation, secondaryAnimation) {
-                                return signUpScreen();
+                                return SignUpScreen();
                               },
                               transitionsBuilder: (context, animation, secondaryAnimation, child) {
                                 const begin = Offset(0.0, 1.0);
