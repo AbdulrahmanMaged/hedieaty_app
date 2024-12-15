@@ -13,21 +13,23 @@ class ProfileWidget extends StatefulWidget {
 }
 
 class _ProfileWidgetState extends State<ProfileWidget> {
-  final DatabaseHelper _dbHelper = DatabaseHelper.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
   Map<String, dynamic>? userData;
   bool isEditing = false; // Tracks editing state
+  bool isExpanded = false; // Tracks expanded state for the section
 
   @override
   void initState() {
     super.initState();
-    _fetchUserData;
-
+    _fetchUserData();
   }
 
+  /// Fetches user data from Firestore
   Future<void> _fetchUserData() async {
     try {
-      // Step 1: Get the current user's UID
-      final uid = FirebaseAuth.instance.currentUser?.uid;
+      // Get the current user's UID
+      final uid = _auth.currentUser?.uid;
       if (uid == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('No logged-in user found.')),
@@ -35,32 +37,15 @@ class _ProfileWidgetState extends State<ProfileWidget> {
         return;
       }
 
-      // Step 2: Fetch userID from Firestore
-      final userDoc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
-      if (!userDoc.exists) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('No user data found in Firestore.')),
-        );
-        return;
-      }
-
-      final userId = userDoc.data()?['userID'];
-      if (userId == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('User ID not found in Firestore.')),
-        );
-        return;
-      }
-
-      // Step 3: Fetch user data from SQLite using the userID
-      final users = await _dbHelper.getUsersById(userId);
-      if (users.isNotEmpty) {
+      // Fetch user data from Firestore
+      final userDoc = await _firestore.collection('users').doc(uid).get();
+      if (userDoc.exists) {
         setState(() {
-          userData = users.first;
+          userData = userDoc.data();
         });
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('No user data found locally.')),
+          SnackBar(content: Text('User data not found in Firestore.')),
         );
       }
     } catch (e) {
@@ -70,13 +55,28 @@ class _ProfileWidgetState extends State<ProfileWidget> {
     }
   }
 
-
-
+  /// Updates user data in Firestore
   Future<void> _updateUserData() async {
-    if (userData != null) {
-      await _dbHelper.insertUser(userData!); // Replace existing data
+    if (userData == null) return;
+
+    try {
+      // Get the current user's UID
+      final uid = _auth.currentUser?.uid;
+      if (uid == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('user not-found')),
+        );
+        return;
+      }
+
+      // Update user data in Firestore
+      await _firestore.collection('users').doc(uid).update(userData!);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Profile updated successfully!')),
+        SnackBar(content: Text('Profile updated successfully')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error updating profile data: $e')),
       );
     }
   }
@@ -92,11 +92,23 @@ class _ProfileWidgetState extends State<ProfileWidget> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Profile'),titleTextStyle: GoogleFonts.pacifico( fontSize: 24,color: Colors.white),
+        title: Text('Profile'),
+        titleTextStyle: GoogleFonts.pacifico(fontSize: 24, color: Colors.white),
         backgroundColor: Colors.purple[600],
         actions: [
           IconButton(
-            icon: Icon(Icons.logout,color: Colors.white),
+            icon: Icon(Icons.settings, color: Colors.white), // Settings icon
+            onPressed: () {
+              // Navigate to the Settings screen
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => WelcomeScreen()), // add notification settings here
+              );
+            },
+            tooltip: 'Settings',
+          ),
+          IconButton(
+            icon: Icon(Icons.logout, color: Colors.white),
             onPressed: _logOut,
             tooltip: 'Log Out',
           ),
@@ -110,104 +122,172 @@ class _ProfileWidgetState extends State<ProfileWidget> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // My Personal Info Section Title
-              Text(
-                'My Personal Info',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.purple[800],
-                ),
-              ),
-              SizedBox(height: 10),
-
-              // Personal Information Section
-              Card(
-                elevation: 4,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      TextFormField(
-                        initialValue: userData!['firstName'],
-                        readOnly: !isEditing,
-                        decoration: InputDecoration(labelText: 'First Name'),
-                        onChanged: (value) {
-                          userData!['firstName'] = value;
-                        },
-                      ),
-                      SizedBox(height: 10),
-                      TextFormField(
-                        initialValue: userData!['lastName'],
-                        readOnly: !isEditing,
-                        decoration: InputDecoration(labelText: 'Last Name'),
-                        onChanged: (value) {
-                          userData!['lastName'] = value;
-                        },
-                      ),
-                      SizedBox(height: 10),
-                      TextFormField(
-                        initialValue: userData!['email'],
-                        readOnly: true, // Email is not editable
-                        decoration: InputDecoration(labelText: 'Email'),
-                      ),
-                      SizedBox(height: 10),
-                      TextFormField(
-                        initialValue: userData!['preferences'],
-                        readOnly: !isEditing,
-                        decoration: InputDecoration(labelText: 'Preferences'),
-                        maxLines: 3,
-                        onChanged: (value) {
-                          userData!['preferences'] = value;
-                        },
-                      ),
-                      SizedBox(height: 20),
-                      ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.purple[600],
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                        onPressed: () {
-                          if (isEditing) {
-                            // Save changes locally
-                            _updateUserData();
-                          }
-                          setState(() {
-                            isEditing = !isEditing; // Toggle editing state
-                          });
-                        },
-                        child: Text(isEditing ? 'Save Changes' : 'Edit',style: TextStyle(fontSize: 16, color: Colors.white)),
+              // My Personal Info Section with Arrow and Glow
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    isExpanded = !isExpanded; // Toggle expansion
+                  });
+                },
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.purple.withOpacity(0.5),
+                        spreadRadius: 3,
+                        blurRadius: 8,
+                        offset: Offset(0, 3), // Shadow position
                       ),
                     ],
                   ),
-                ),
-              ),
-
-              SizedBox(height: 20),
-
-              // My Pledged Gifts Button
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.purple[600],
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'My Personal Info',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.purple[800],
+                              ),
+                            ),
+                            Icon(
+                              isExpanded
+                                  ? Icons.keyboard_arrow_up
+                                  : Icons.keyboard_arrow_down,
+                              color: Colors.purple,
+                              size: 24,
+                            ),
+                          ],
+                        ),
+                        if (isExpanded)
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              SizedBox(height: 10),
+                              // Personal Information Fields
+                              TextFormField(
+                                initialValue: userData!['firstName'],
+                                readOnly: !isEditing,
+                                decoration: InputDecoration(
+                                  labelText: 'First Name',
+                                  border: OutlineInputBorder(),
+                                  filled: true,
+                                  fillColor: Colors.grey[200],
+                                  enabledBorder: OutlineInputBorder(
+                                    borderSide: BorderSide(
+                                        color: Colors.purple[300]!,
+                                        width: 2),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderSide: BorderSide(
+                                        color: Colors.purple[600]!,
+                                        width: 2),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                ),
+                                onChanged: (value) {
+                                  userData!['firstName'] = value;
+                                },
+                              ),
+                              SizedBox(height: 10),
+                              TextFormField(
+                                initialValue: userData!['lastName'],
+                                readOnly: !isEditing,
+                                decoration: InputDecoration(
+                                  labelText: 'Last Name',
+                                  border: OutlineInputBorder(),
+                                  filled: true,
+                                  fillColor: Colors.grey[200],
+                                  enabledBorder: OutlineInputBorder(
+                                    borderSide: BorderSide(
+                                        color: Colors.purple[300]!,
+                                        width: 2),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderSide: BorderSide(
+                                        color: Colors.purple[600]!,
+                                        width: 2),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                ),
+                                onChanged: (value) {
+                                  userData!['lastName'] = value;
+                                },
+                              ),
+                              SizedBox(height: 10),
+                              TextFormField(
+                                initialValue: userData!['preferences'],
+                                readOnly: !isEditing,
+                                decoration: InputDecoration(
+                                  labelText: 'Preferences',
+                                  prefixIcon:
+                                  Icon(Icons.abc, color: Colors.purple),
+                                  border: OutlineInputBorder(),
+                                  filled: true,
+                                  fillColor: Colors.grey[200],
+                                  enabledBorder: OutlineInputBorder(
+                                    borderSide: BorderSide(
+                                        color: Colors.purple[300]!,
+                                        width: 2),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderSide: BorderSide(
+                                        color: Colors.purple[600]!,
+                                        width: 2),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                ),
+                                maxLines: 3,
+                                onChanged: (value) {
+                                  userData!['preferences'] = value;
+                                },
+                              ),
+                              SizedBox(height: 20),
+                              ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.purple[600],
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius:
+                                    BorderRadius.circular(8),
+                                  ),
+                                ),
+                                onPressed: () {
+                                  if (isEditing) {
+                                    // Save changes in Firestore
+                                    _updateUserData();
+                                  }
+                                  setState(() {
+                                    isEditing =
+                                    !isEditing; // Toggle editing state
+                                  });
+                                },
+                                child: Text(
+                                  isEditing
+                                      ? 'Save Changes'
+                                      : 'Edit',
+                                  style: TextStyle(
+                                      fontSize: 16,
+                                      color: Colors.white),
+                                ),
+                              ),
+                            ],
+                          ),
+                      ],
+                    ),
                   ),
                 ),
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => WelcomeScreen()), // e3ml pledged page
-                  );
-                },
-                child: Text('My Pledged Gifts',style: TextStyle(fontSize: 16, color: Colors.white)),
               ),
-
               SizedBox(height: 20),
 
               // Empty Section Placeholder
@@ -236,8 +316,17 @@ class _ProfileWidgetState extends State<ProfileWidget> {
           ),
         ),
       ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          // Navigate to MyPledgedScreen
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => WelcomeScreen()), // add pledged screen
+          );
+        },
+        child: Icon(Icons.card_giftcard,color: Colors.white,), // Gift icon for the button
+        backgroundColor: Colors.purple[600], // Match the app's theme
+      ),
     );
   }
 }
-
-
