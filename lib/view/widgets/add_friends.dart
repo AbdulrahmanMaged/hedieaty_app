@@ -362,9 +362,30 @@ class _AddFriendsWidgetState extends State<AddFriendsWidget> {
                 itemCount: _friendsList.length,
                 itemBuilder: (context, index) {
                   final friend = _friendsList[index];
-                  return ListTile(
-                    title: Text('${friend['firstName']} ${friend['lastName']}'),
-                    subtitle: Text(friend['email']),
+
+                  return Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        color: Colors.grey[200],
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.purple.withOpacity(0.8),
+                            spreadRadius: 5,
+                            blurRadius: 7,
+                          ),
+                        ],
+                      ),
+                      child: ListTile(
+                        contentPadding: EdgeInsets.all(16),
+                        title: Text(
+                          '${friend['firstName']} ${friend['lastName']}',
+                          style: GoogleFonts.roboto(fontSize: 18),
+                        ),
+                        subtitle: Text(friend['email']),
+                      ),
+                    ),
                   );
                 },
               ),
@@ -375,3 +396,4 @@ class _AddFriendsWidgetState extends State<AddFriendsWidget> {
     );
   }
 }
+

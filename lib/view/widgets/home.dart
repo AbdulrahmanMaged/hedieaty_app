@@ -7,6 +7,7 @@ import 'package:hedieaty_app/view/widgets/bottom_nav_bar.dart';
 import 'package:hedieaty_app/view/widgets/top_home_bar.dart';
 
 import '../../services/database/local/user.dart';
+import '../screens/events_screen.dart';
 
 class Home extends StatefulWidget {
   const Home({super.key});
@@ -81,7 +82,7 @@ class _HomeState extends State<Home> {
           context, MaterialPageRoute(builder: (context) =>  MyGifts()));
     } else if (index == 3) {
       Navigator.push(context,
-          MaterialPageRoute(builder: (context) =>  MyProfile()));
+          MaterialPageRoute(builder: (context) =>  EventsScreen()));
     }
   }
 

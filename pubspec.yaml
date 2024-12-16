@@ -24,8 +24,7 @@ dependencies:
   firebase_auth: ^5.3.4
   cloud_firestore: ^5.5.1
   google_fonts: ^6.2.1
-  intl_phone_number_input: ^0.7.0
-
+  intl: ^0.17.0
 
 dev_dependencies:
   flutter_test:
