@@ -103,7 +103,6 @@ class _AddFriendsWidgetState extends State<AddFriendsWidget> {
         final friendData = query.docs.first.data();
         final friendId = query.docs.first.id;
 
-        final currentUserID = FirebaseAuth.instance.currentUser?.uid;
         final userDataSnapshot = await FirebaseFirestore.instance
             .collection('users')
             .doc(currentUserID)
@@ -156,30 +155,74 @@ class _AddFriendsWidgetState extends State<AddFriendsWidget> {
         .update({'status': status});
 
     if (status == 'accepted') {
-      // Add friend to current user's 'friends' collection
-      await FirebaseFirestore.instance
+      // Fetch current user's data
+      final userDataSnapshot = await FirebaseFirestore.instance
           .collection('users')
           .doc(currentUserID)
-          .collection('friends')
-          .doc(requestedUserID)
-          .set({'addedAt': FieldValue.serverTimestamp()});
+          .get();
+      final userData = userDataSnapshot.data();
 
-// Add current user to the requested user's 'friends' collection
-      await FirebaseFirestore.instance
+      // Fetch requested user's data
+      final requestedUserDataSnapshot = await FirebaseFirestore.instance
           .collection('users')
           .doc(requestedUserID)
-          .collection('friends')
-          .doc(currentUserID)
-          .set({'addedAt': FieldValue.serverTimestamp()});
+          .get();
+      final requestedUserData = requestedUserDataSnapshot.data();
+
+      if (userData != null && requestedUserData != null) { // Add the requested user to the current user's 'friends' collection with first, last name, and email
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(currentUserID)
+            .collection('friends')
+            .doc(requestedUserID)
+            .set({
+          'firstName': requestedUserData['firstName'],
+          'lastName': requestedUserData['lastName'],
+          'email': requestedUserData['email'],
+        });
+
+        // Add the current user to the requested user's 'friends' collection with first, last name, and email
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(requestedUserID)
+            .collection('friends')
+            .doc(currentUserID)
+            .set({
+          'firstName': userData['firstName'],
+          'lastName': userData['lastName'],
+          'email': userData['email'],
+        });
+      }
     }
-
     setState(() {
       _friendRequests.removeWhere((request) => request['requestedUserID'] == requestedUserID);
     });
+    // refresh the pending requests
+    _fetchPendingRequests();
 
+    //fetch freinds
+    _fetchFriends();
 
+    // colorful SnackBar
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Friend request $status.')),
+      SnackBar(
+        content: Text(
+          'Friend request ${status == 'accepted' ? 'accepted' : 'rejected'}!',
+          style: TextStyle(color: Colors.white), // Change text color
+        ),
+        backgroundColor: status == 'accepted' ? Colors.green : Colors.red, // Green for success, Red for rejection
+        behavior: SnackBarBehavior.floating, // Makes the SnackBar float on top
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10), // Rounded corners
+        ),
+        margin: EdgeInsets.all(16), // Add some margin around the SnackBar
+        duration: Duration(seconds: 2), // SnackBar stays for 2 seconds
+        action: SnackBarAction(
+          label: 'OK',
+          textColor: Colors.white, // Action text color
+          onPressed: () {},
+        ),
+      ),
     );
   }
 
@@ -295,7 +338,9 @@ class _AddFriendsWidgetState extends State<AddFriendsWidget> {
                   borderSide: BorderSide(color: Colors.purple[600]!, width: 2),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                suffixIcon: IconButton(
+                suffixIcon: _isLoading
+                    ? CircularProgressIndicator()  // Show a loading spinner when _isLoading is true
+                    : IconButton(
                   icon: Icon(Icons.person_add, color: Colors.purple),
                   onPressed: _sendFriendRequest,
                 ),
