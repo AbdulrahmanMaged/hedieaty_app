@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_fonts/google_fonts.dart';
-
-import '../../services/database/local/database_helper.dart';
 
 class AddFriendsWidget extends StatefulWidget {
   @override
@@ -10,27 +9,43 @@ class AddFriendsWidget extends StatefulWidget {
 }
 
 class _AddFriendsWidgetState extends State<AddFriendsWidget> {
-  final TextEditingController _searchController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
-  final DatabaseHelper _dbHelper = DatabaseHelper.instance;
   List<Map<String, dynamic>> _friendsList = [];
-  String _searchQuery = '';
+  List<Map<String, dynamic>> _friendRequests = [];
   bool _isLoading = false;
   bool _noFriends = false;
   bool _userNotFound = false;
+  final currentUserID = FirebaseAuth.instance.currentUser?.uid;
 
   @override
   void initState() {
     super.initState();
     _fetchFriends();
+    _fetchPendingRequests();
   }
 
+  /// Fetch Friends from Firestore
   Future<void> _fetchFriends() async {
     try {
-      final friends = await _dbHelper.getFriends(1); // Replace with logged-in user ID
+      if (currentUserID == null) return;
+
+      final snapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(currentUserID)
+          .collection('friends')
+          .get();
+
       setState(() {
-        _friendsList = friends;
-        _noFriends = friends.isEmpty; // Check if no friends were found
+        _friendsList = snapshot.docs.map((doc) {
+          final data = doc.data();
+          return {
+            'firstName': data['firstName'],
+            'lastName': data['lastName'],
+            'email': data['email'],
+          };
+        }).toList();
+
+        _noFriends = _friendsList.isEmpty; // Check if no friends
       });
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -39,7 +54,39 @@ class _AddFriendsWidgetState extends State<AddFriendsWidget> {
     }
   }
 
-  Future<void> _searchFirestoreFriend() async {
+  /// Fetch Pending Friend Requests
+  Future<void> _fetchPendingRequests() async {
+    try {
+      if (currentUserID == null) return;
+
+      final snapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(currentUserID)
+          .collection('friendRequests')
+          .where('status', isEqualTo: 'pending')
+          .get();
+
+      setState(() {
+        _friendRequests = snapshot.docs.map((doc) {
+          final data = doc.data();
+          return {
+            'requestedUserID': doc.id,
+            'firstName': data['firstName'],
+            'lastName': data['lastName'],
+            'email': data['email'],
+            'sentAt': (data['sentAt'] as Timestamp).toDate(),
+          };
+        }).toList();
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error fetching friend requests: $e')),
+      );
+    }
+  }
+
+  /// Send Friend Request
+  Future<void> _sendFriendRequest() async {
     setState(() {
       _isLoading = true;
       _userNotFound = false;
@@ -56,23 +103,31 @@ class _AddFriendsWidgetState extends State<AddFriendsWidget> {
         final friendData = query.docs.first.data();
         final friendId = query.docs.first.id;
 
-        // Add to Firestore
-        await FirebaseFirestore.instance
+        final currentUserID = FirebaseAuth.instance.currentUser?.uid;
+        final userDataSnapshot = await FirebaseFirestore.instance
             .collection('users')
-            .doc('currentUserId') // Replace with logged-in user ID
-            .collection('friends')
-            .doc(friendId)
-            .set({'addedAt': FieldValue.serverTimestamp()});
+            .doc(currentUserID)
+            .get();
+        final userData = userDataSnapshot.data();
 
-        // Add to Local Database
-        await _dbHelper.addFriend(1, int.parse(friendId)); // Replace 1 with user ID
+        if (currentUserID != null && userData != null) {
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(friendId)
+              .collection('friendRequests')
+              .doc(currentUserID)
+              .set({
+            'firstName': userData['firstName'],
+            'lastName': userData['lastName'],
+            'email': userData['email'],
+            'sentAt': FieldValue.serverTimestamp(),
+            'status': 'pending',
+          });
 
-        // Refresh Friends List
-        await _fetchFriends();
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Friend added successfully!')),
-        );
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Friend request sent!')),
+          );
+        }
       } else {
         setState(() {
           _userNotFound = true; // No user found
@@ -89,76 +144,186 @@ class _AddFriendsWidgetState extends State<AddFriendsWidget> {
     }
   }
 
+  /// Handle Friend Request (Accept/Reject)
+  Future<void> _handleFriendRequest(String requestedUserID, String status) async {
+    if (currentUserID == null) return;
+
+    await FirebaseFirestore.instance
+        .collection('users')
+        .doc(currentUserID)
+        .collection('friendRequests')
+        .doc(requestedUserID)
+        .update({'status': status});
+
+    if (status == 'accepted') {
+      // Add friend to current user's 'friends' collection
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(currentUserID)
+          .collection('friends')
+          .doc(requestedUserID)
+          .set({'addedAt': FieldValue.serverTimestamp()});
+
+// Add current user to the requested user's 'friends' collection
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(requestedUserID)
+          .collection('friends')
+          .doc(currentUserID)
+          .set({'addedAt': FieldValue.serverTimestamp()});
+    }
+
+    setState(() {
+      _friendRequests.removeWhere((request) => request['requestedUserID'] == requestedUserID);
+    });
+
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Friend request $status.')),
+    );
+  }
+
+  /// Format Time Difference
+  String _formatTimeDifference(Duration difference) {
+    if (difference.inMinutes < 60) {
+      return '${difference.inMinutes} minutes ago';
+    } else if (difference.inHours < 24) {
+      return '${difference.inHours} hours ago';
+    } else {
+      return '${difference.inDays} days ago';
+    }
+  }
+
+  /// Show Friend Requests Dialog
+  void _showFriendRequestsDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Friend Requests'),
+        content: _friendRequests.isEmpty
+            ? Text('No pending friend requests.')
+            : SingleChildScrollView(
+          child: Column(
+            children: _friendRequests.map((request) {
+              final timeDifference =
+              DateTime.now().difference(request['sentAt']);
+              final timeAgo = _formatTimeDifference(timeDifference);
+
+              return ListTile(
+                title: Text(
+                    '${request['firstName']} ${request['lastName']}'),
+                subtitle: Text('${request['email']} • $timeAgo'),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: Icon(Icons.check, color: Colors.green),
+                      onPressed: () =>
+                          _handleFriendRequest(request['requestedUserID'], 'accepted'),
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.close, color: Colors.red),
+                      onPressed: () =>
+                          _handleFriendRequest(request['requestedUserID'], 'rejected'),
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            child: Text('Close'),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final filteredFriends = _friendsList
-        .where((friend) =>
-        friend['name'].toLowerCase().contains(_searchQuery.toLowerCase()))
-        .toList();
-
     return Scaffold(
       appBar: AppBar(
-        title: Text('Friends'),titleTextStyle: GoogleFonts.pacifico( fontSize: 24,color: Colors.white),
+        title: Text('Friends'),
+        titleTextStyle: GoogleFonts.pacifico(fontSize: 24, color: Colors.white),
         backgroundColor: Colors.purple[600],
+        actions: [
+          Stack(
+            children: [
+              IconButton(
+                icon: Icon(Icons.notifications, color: Colors.white),
+                onPressed: _showFriendRequestsDialog,
+              ),
+              if (_friendRequests.isNotEmpty)
+                Positioned(
+                  right: 8,
+                  top: 8,
+                  child: Container(
+                    padding: EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: Colors.red,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Text(
+                      '${_friendRequests.length}',
+                      style: TextStyle(color: Colors.white, fontSize: 12),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            // Search Bar and Button
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _searchController,
-                    onChanged: (value) {
-                      setState(() {
-                        _searchQuery = value;
-                      });
-                    },
-                    decoration: InputDecoration(
-                      labelText: 'Search',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
+            TextField(
+              controller: _emailController,
+              decoration: InputDecoration(
+                labelText: 'Enter Friend\'s Email',
+                border: OutlineInputBorder(),
+                filled: true,
+                fillColor: Colors.grey[200],
+                enabledBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: Colors.purple[300]!, width: 2),
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                SizedBox(width: 8),
-                ElevatedButton(
-                  onPressed: _searchFirestoreFriend,
-                  child: _isLoading ? CircularProgressIndicator() : Text('Add by Email'),
+                focusedBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: Colors.purple[600]!, width: 2),
+                  borderRadius: BorderRadius.circular(10),
                 ),
-              ],
+                suffixIcon: IconButton(
+                  icon: Icon(Icons.person_add, color: Colors.purple),
+                  onPressed: _sendFriendRequest,
+                ),
+              ),
             ),
             SizedBox(height: 16),
-
-            // No Friends Message
             if (_noFriends)
               Text(
                 "You don't have friends yet ☹️",
                 style: TextStyle(color: Colors.grey, fontSize: 16),
               ),
-
-            // User Not Found Message
             if (_userNotFound)
               Text(
                 "User not found.",
                 style: TextStyle(color: Colors.red, fontSize: 16),
               ),
-
-            // Friends List
-            if (!_noFriends)
-              Expanded(
-                child: ListView.builder(
-                  itemCount: filteredFriends.length,
-                  itemBuilder: (context, index) {
-                    final friend = filteredFriends[index];
-                    return ListTile(
-                      title: Text(friend['name']),
-                      subtitle: Text(friend['email']),
-                    );
-                  },
-                ),
+            Expanded(
+              child: ListView.builder(
+                itemCount: _friendsList.length,
+                itemBuilder: (context, index) {
+                  final friend = _friendsList[index];
+                  return ListTile(
+                    title: Text('${friend['firstName']} ${friend['lastName']}'),
+                    subtitle: Text(friend['email']),
+                  );
+                },
               ),
+            ),
           ],
         ),
       ),
