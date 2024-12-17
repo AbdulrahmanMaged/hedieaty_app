@@ -163,11 +163,19 @@ class _EventsScreenState extends State<EventsScreen> {
         itemCount: _events.length,
         itemBuilder: (context, index) {
           final event = _events[index];
-          return Card(
-            elevation: 5,
-            margin: EdgeInsets.all(10),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
+          return Container(
+            margin: EdgeInsets.symmetric(vertical: 20.0, horizontal: 15.0),
+            decoration: BoxDecoration(
+              color: Colors.white,  // Background color of the event box
+              borderRadius: BorderRadius.circular(10.0),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.purple.withOpacity(0.8), // Purple glow color with opacity
+                  blurRadius: 10.0,  // The blur radius controls the size of the glow
+                  spreadRadius: 3.0, // The spread radius controls how far the glow extends
+                  offset: Offset(0, 0),  // No offset for center-aligned glow
+                ),
+              ],
             ),
             child: ListTile(
               contentPadding: EdgeInsets.all(10),

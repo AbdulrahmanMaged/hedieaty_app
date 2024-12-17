@@ -39,23 +39,16 @@ class _AddEventScreenState extends State<AddEventScreen> {
   Future<void> _addEvent() async {
     if (_nameController.text.isEmpty || _selectedDate == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Please fill all required fields.')),
+        SnackBar(content: Text('Please fill all required fields.',style: TextStyle(color: Colors.white),),
+            backgroundColor: Colors.red),
       );
       return;
     }
 
     try {
       final currentUserID = FirebaseAuth.instance.currentUser?.uid;
-      final userSnapshot = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(currentUserID)
-          .get();
-      final userData = userSnapshot.data();
-
-      final newEventId = '${currentUserID}_${userData!['firstName']}';
 
       await FirebaseFirestore.instance.collection('events').add({
-        'id': newEventId,
         'name': _nameController.text,
         'category': 'General', // You can modify this field based on your needs
         'status': 'Upcoming', // You can modify this field based on your needs
@@ -67,7 +60,8 @@ class _AddEventScreenState extends State<AddEventScreen> {
 
       Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Event added successfully!')),
+        SnackBar(content: Text('Event added successfully!',style: TextStyle(color: Colors.white),),
+        backgroundColor: Colors.green),
       );
 
       // After saving the event, trigger the callback to refresh events on the main screen
@@ -77,7 +71,8 @@ class _AddEventScreenState extends State<AddEventScreen> {
 
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error adding event: $e')),
+        SnackBar(content: Text('Error adding event: $e',style: TextStyle(color: Colors.white),),
+            backgroundColor: Colors.red),
       );
     }
   }
@@ -234,7 +229,7 @@ class _AddEventScreenState extends State<AddEventScreen> {
                     shadowColor: Colors.purple.withOpacity(0.5),
                   ),
                   child: Text(
-                    'Add Event',
+                    'Post Event',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
