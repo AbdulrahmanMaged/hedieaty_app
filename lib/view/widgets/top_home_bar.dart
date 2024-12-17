@@ -79,12 +79,12 @@ class TopHomeBar extends StatelessWidget implements PreferredSizeWidget {
                 items: [
                   PopupMenuItem<String>(
                     value: 'new_event',
-                    child: const Text('New Event'),
+                    child: const Text('Event'),
                     onTap: () => onMenuSelected('new_event'),
                   ),
                   PopupMenuItem<String>(
                     value: 'edit_or_new_gift',
-                    child: const Text('Edit/New Gift'),
+                    child: const Text('Gift'),
                     onTap: () => onMenuSelected('edit_or_new_gift'),
                   ),
                 ],

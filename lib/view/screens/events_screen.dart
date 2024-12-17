@@ -7,6 +7,9 @@ import 'package:intl/intl.dart';
 import '../sideScreens/AddEventScreen.dart';
 
 class EventsScreen extends StatefulWidget {
+  final Function onEventAdded;
+  EventsScreen({required this.onEventAdded});
+
   @override
   _EventsScreenState createState() => _EventsScreenState();
 }
@@ -19,8 +22,7 @@ class _EventsScreenState extends State<EventsScreen> {
 
   @override
   void initState() {
-    super.initState();
-    _fetchEvents();
+    fetchEvents();
   }
 
   // Navigate to AddEventScreen and pass _fetchEvents callback
@@ -28,15 +30,13 @@ class _EventsScreenState extends State<EventsScreen> {
     await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => AddEventScreen(onEventAdded: _fetchEvents), // Passing the callback
+        builder: (context) => AddEventScreen(onEventAdded: fetchEvents), // Passing the callback
       ),
     );
-    // When the user returns, fetch the updated list of events
-    _fetchEvents();
   }
 
   /// Fetch Events from Firestore
-  Future<void> _fetchEvents() async {
+  Future<void> fetchEvents() async {
     setState(() {
       _isLoading = true;
     });
@@ -52,7 +52,6 @@ class _EventsScreenState extends State<EventsScreen> {
           return {
             'id': doc.id,
             'name': data['name'],
-            'category': data['category'],
             'status': data['status'],
             'date': data['date'],
           };
@@ -73,14 +72,28 @@ class _EventsScreenState extends State<EventsScreen> {
   void _sortEvents() {
     setState(() {
       if (_sortBy == 'Name') {
-        _events.sort((a, b) => a['name'].compareTo(b['name']));
-      } else if (_sortBy == 'Category') {
-        _events.sort((a, b) => a['category'].compareTo(b['category']));
+        // Ensure that 'name' is not null and sort based on the first letter of the name
+        _events.sort((a, b) {
+          String nameA = (a['name'] ?? '').isNotEmpty ? a['name'][0].toUpperCase() : '';
+          String nameB = (b['name'] ?? '').isNotEmpty ? b['name'][0].toUpperCase() : '';
+
+          return nameA.compareTo(nameB);
+        });
       } else if (_sortBy == 'Status') {
-        _events.sort((a, b) => a['status'].compareTo(b['status']));
+        // Define a custom order for status if you want specific sorting (e.g., current < upcoming < past)
+        List<String> statusOrder = ['Current', 'Upcoming', 'Past'];
+
+        _events.sort((a, b) {
+          String statusA = a['status'] ?? '';
+          String statusB = b['status'] ?? '';
+
+          // Compare status by predefined order
+          return statusOrder.indexOf(statusA).compareTo(statusOrder.indexOf(statusB));
+        });
       }
     });
   }
+
 
   /// Show the event details for editing
   void _editEvent(String eventId) {
@@ -113,7 +126,7 @@ class _EventsScreenState extends State<EventsScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Event deleted successfully!')),
         );
-        _fetchEvents(); // Refresh the list
+        fetchEvents(); // Refresh the list
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error deleting event: $e')),
@@ -144,10 +157,6 @@ class _EventsScreenState extends State<EventsScreen> {
                 child: Text('Sort by Name'),
               ),
               PopupMenuItem(
-                value: 'Category',
-                child: Text('Sort by Category'),
-              ),
-              PopupMenuItem(
                 value: 'Status',
                 child: Text('Sort by Status'),
               ),
@@ -163,24 +172,28 @@ class _EventsScreenState extends State<EventsScreen> {
         itemCount: _events.length,
         itemBuilder: (context, index) {
           final event = _events[index];
-          return Container(
-            margin: EdgeInsets.symmetric(vertical: 20.0, horizontal: 15.0),
-            decoration: BoxDecoration(
-              color: Colors.white,  // Background color of the event box
+          return  Card(
+              margin: EdgeInsets.symmetric(vertical: 10.0, horizontal: 15.0),
+              shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(10.0),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.purple.withOpacity(0.8), // Purple glow color with opacity
-                  blurRadius: 10.0,  // The blur radius controls the size of the glow
-                  spreadRadius: 3.0, // The spread radius controls how far the glow extends
-                  offset: Offset(0, 0),  // No offset for center-aligned glow
-                ),
-              ],
-            ),
-            child: ListTile(
+          ),
+            elevation: 8.0, // Box shadow effect
+            color: Colors.grey[200], // Background color
+            shadowColor: Colors.purple.withOpacity(0.8), // Shadow color with opacity
+            child:ListTile(
               contentPadding: EdgeInsets.all(10),
+              isThreeLine: true,
               title: Text(event['name'], style: TextStyle(fontSize: 18)),
-              subtitle: Text('Category: ${event['category']}'),
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Status: ${event['status']}'),
+                  SizedBox(height: 2),  // Add spacing between the status and date
+                  Text(
+                    'Date: ${event['date'] != null ? DateFormat('dd-MMM-yyyy').format(event['date'].toDate()) : 'N/A'}',
+                  ),
+                ],
+              ),
               trailing: PopupMenuButton<String>(
                 onSelected: (value) {
                   if (value == 'Edit') {

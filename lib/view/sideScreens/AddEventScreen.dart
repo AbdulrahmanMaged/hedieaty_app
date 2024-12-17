@@ -47,18 +47,29 @@ class _AddEventScreenState extends State<AddEventScreen> {
 
     try {
       final currentUserID = FirebaseAuth.instance.currentUser?.uid;
+      // Get the current date (without time) to compare with event date
+      final DateNotFinal = DateTime.now();
+      final CurrentDate = DateTime(DateNotFinal.year, DateNotFinal.month, DateNotFinal.day); // Set time to 00:00:00.000
+
+      final eventDate = _selectedDate!;
+      // Determine the event status based on the event date
+      String eventStatus = 'Upcoming'; // Default value
+
+      if (eventDate.isBefore(CurrentDate)) {
+        eventStatus = 'Past'; // Event is in the past
+      } else if (eventDate.isAtSameMomentAs(CurrentDate)) {
+        eventStatus = 'Current'; // Event is today
+      }
 
       await FirebaseFirestore.instance.collection('events').add({
         'name': _nameController.text,
-        'category': 'General', // You can modify this field based on your needs
-        'status': 'Upcoming', // You can modify this field based on your needs
+        'status': eventStatus, // You can modify this field based on your needs
         'date': Timestamp.fromDate(_selectedDate!),
         'location': _locationController.text,
         'description': _descriptionController.text,
         'userId': currentUserID,
       });
 
-      Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Event added successfully!',style: TextStyle(color: Colors.white),),
         backgroundColor: Colors.green),
@@ -186,7 +197,7 @@ class _AddEventScreenState extends State<AddEventScreen> {
                     child: TextFormField(
                       controller: TextEditingController(
                         text: _selectedDate != null
-                            ? DateFormat('yyyy-MM-dd').format(_selectedDate!)
+                            ? DateFormat('dd-MM-yyyy').format(_selectedDate!)
                             : 'Select Date',
                       ),
                       decoration: InputDecoration(

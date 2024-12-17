@@ -8,6 +8,7 @@ import 'package:hedieaty_app/view/widgets/top_home_bar.dart';
 
 import '../../services/database/local/user.dart';
 import '../screens/events_screen.dart';
+import '../sideScreens/AddEventScreen.dart';
 
 class Home extends StatefulWidget {
   const Home({super.key});
@@ -19,6 +20,8 @@ class Home extends StatefulWidget {
 class _HomeState extends State<Home> {
   final dbHelper = DatabaseHelper.instance;
   int _currentIndex = 0;
+  final eventsScreen = EventsScreen(onEventAdded: () {});
+
 
   // Fetch users from the database
   Future<List<User>> _fetchUsers() async {
@@ -82,16 +85,25 @@ class _HomeState extends State<Home> {
           context, MaterialPageRoute(builder: (context) =>  MyGifts()));
     } else if (index == 3) {
       Navigator.push(context,
-          MaterialPageRoute(builder: (context) =>  EventsScreen()));
+          MaterialPageRoute(builder: (context) =>  EventsScreen(onEventAdded: eventsScreen.createState().fetchEvents,)));
     }
   }
 
   // Handle the selection from the top bar dropdown menu
   void _onMenuSelected(String value) {
     if (value == 'new_event') {
-      // Navigate to the new event page
+// Navigate to AddEventScreen and pass the _fetchEvents callback
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => AddEventScreen(
+            onEventAdded: eventsScreen.createState().fetchEvents,
+          ),
+        ),
+      );
     } else if (value == 'edit_or_new_gift') {
       // Navigate to the new gift list page
     }
   }
+
 }
