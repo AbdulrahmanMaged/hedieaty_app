@@ -145,6 +145,10 @@ class _EventsScreenState extends State<EventsScreen> {
         backgroundColor: Colors.purple[600],
         actions: [
           PopupMenuButton<String>(
+            icon: Icon(
+              Icons.more_vert, // Default "three dots" menu icon
+              color: Colors.white, // Set the icon color here
+            ),
             onSelected: (value) {
               setState(() {
                 _sortBy = value;
@@ -162,6 +166,7 @@ class _EventsScreenState extends State<EventsScreen> {
               ),
             ],
           ),
+
         ],
       ),
       body: _isLoading
