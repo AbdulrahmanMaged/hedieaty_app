@@ -38,11 +38,6 @@ class BottomNavBar extends StatelessWidget {
           tooltip: 'View Pledged Gifts',
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.event_note),
-          label: 'Events',
-          tooltip: 'View Events',
-        ),
-        BottomNavigationBarItem(
           icon: Icon(Icons.person_outline),
           label: 'Profile',
           tooltip: 'View Profile',

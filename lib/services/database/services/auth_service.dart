@@ -2,7 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../local/database_helper.dart';
-import '../../../view/screens/home_page.dart';
+import '../../../mainApp/screens/home_page.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -26,9 +26,6 @@ class AuthService {
         email: email,
         password: password,
       );
-      // Generate a unique user ID
-      String generatedID =
-          '${firstName.substring(0, 2).toUpperCase()}${lastName.substring(0, 2).toUpperCase()}${DateTime.now().millisecondsSinceEpoch}';
 
       // Save user information in Firestore
       await _firestore.collection('users').doc(userCredential.user!.uid).set({
@@ -36,13 +33,12 @@ class AuthService {
         'lastName': lastName,
         'preferences': preferences,
         'email': email,
-        'userID': generatedID,
         'createdAt': Timestamp.now(),
       });
 
       // 4. Save user information in SQLite
       await _dbHelper.insertUser({
-        'id': generatedID,
+        'id': userCredential.user?.uid,
         'firstName': firstName,
         'lastName': lastName,
         'email': email,

@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:hedieaty_app/view/screens/welcomeScreen.dart';
+import 'package:hedieaty_app/mainApp/widgets/home.dart';
 
-
-class MyPledgedGiftsPage {
-  @override
+class HomePage extends StatelessWidget {
+  const HomePage({super.key});
+ 
+ @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Hedieaty App',
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: WelcomeScreen(),
+      home: const Home(),
     );
   }
 }
+

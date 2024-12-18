@@ -4,7 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
-import '../sideScreens/AddEventScreen.dart';
+import '../formScreens//AddEventScreen.dart';
 
 class EventsScreen extends StatefulWidget {
   final Function onEventAdded;

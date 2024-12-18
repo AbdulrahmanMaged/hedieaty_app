@@ -1,7 +1,7 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:hedieaty_app/services/database/local/database_helper.dart';
-import 'package:hedieaty_app/view/screens/welcomeScreen.dart';
+import 'package:hedieaty_app/mainApp/screens/welcomeScreen.dart';
 
 import 'firebase_options.dart';
 
