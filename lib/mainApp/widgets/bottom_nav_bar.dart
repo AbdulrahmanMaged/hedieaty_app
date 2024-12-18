@@ -42,6 +42,16 @@ class BottomNavBar extends StatelessWidget {
           label: 'Profile',
           tooltip: 'View Profile',
         ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.storage),
+          label: 'Local DB',
+          tooltip: 'test local',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.delete_forever),
+          label: 'Delete table',
+          tooltip: 'test local',
+        ),
       ],
     );
   }

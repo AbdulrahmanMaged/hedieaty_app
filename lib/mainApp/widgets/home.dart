@@ -83,6 +83,11 @@ class _HomeState extends State<Home> {
     } else if (index == 2) {
       Navigator.push(
           context, MaterialPageRoute(builder: (context) =>  MyGifts()));
+    } else if (index == 4) {
+      debugDatabase();
+    }
+    else if (index == 5) {
+      debugDeleteTable('nothing');
     }
   }
 
@@ -102,5 +107,16 @@ class _HomeState extends State<Home> {
       // Navigate to the new gift list page
     }
   }
+  //calls print local db tables
+  void debugDatabase() async {
+    await DatabaseHelper.instance.printAllTables();
+  }
+
+  //deletes a table from given name
+  void debugDeleteTable(String tableName) async {
+    await DatabaseHelper.instance.deleteTable(tableName);
+  }
+
+
 
 }

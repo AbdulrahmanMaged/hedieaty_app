@@ -26,6 +26,47 @@ class DatabaseHelper {
     );
   }
 
+  //print in terminal the contents of all tables
+  Future<void> printAllTables() async {
+    final db = await database;
+
+    // Get all table names
+    final List<Map<String, dynamic>> tableList = await db.rawQuery(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'");
+
+    for (var table in tableList) {
+      final tableName = table['name'];
+
+      // Query all rows from the table
+      final List<Map<String, dynamic>> rows = await db.query(tableName);
+
+      // Print the table name and its rows
+      print('Table: $tableName');
+      for (var row in rows) {
+        print(row);
+      }
+      print('-----------------------');
+    }
+  }
+
+  //Delete all rows based on table name
+  Future<void> deleteTable(String tableName) async {
+    final db = await database;
+
+    // Check if the table exists
+    final tableExists = await db.rawQuery(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name = ?", [tableName]);
+
+    if (tableExists.isNotEmpty) {
+      // Delete all rows in the table
+      await db.delete(tableName);
+      print('Table "$tableName" has been cleared.');
+    } else {
+      print('Table "$tableName" does not exist.');
+    }
+  }
+
+
   Future<void> _onCreate(Database db, int version) async {
     await db.execute('''
       CREATE TABLE Users (
