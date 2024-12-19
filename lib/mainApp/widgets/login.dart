@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../services/database/services/auth_service.dart';
-import '../screens/home_page.dart'; // Import your home page
+import '../screens/home_screen.dart'; // Import your home page
 import '../screens/welcomeScreen.dart'; // Import the Welcome Screen
 
 class LoginScreen extends StatefulWidget {
