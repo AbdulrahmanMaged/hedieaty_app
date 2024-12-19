@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 class EditAddInEvents extends StatefulWidget {
@@ -234,6 +235,7 @@ class _EditAddInEventsState extends State<EditAddInEvents> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Edit Event & Gifts'),
+        titleTextStyle: GoogleFonts.pacifico(fontSize: 24, color: Colors.white),
         backgroundColor: Colors.purple[600],
       ),
       body: _isLoading
@@ -314,7 +316,11 @@ class _EditAddInEventsState extends State<EditAddInEvents> {
                       _isAddingGift = true;
                     });
                   },
-                  child: Text('Add Gift'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.grey[300],
+
+                  ),
+                  child: Text('Add Gift',style: TextStyle(color: Colors.purple),),
                 ),
 
               // Gift Section

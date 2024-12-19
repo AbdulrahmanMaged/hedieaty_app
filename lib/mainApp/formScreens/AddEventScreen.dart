@@ -423,7 +423,11 @@ class _AddEventScreenState extends State<AddEventScreen> {
                           _isAddingGift = true;
                         });
                       },
-                      child: Text('Add Gift'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.grey[300],
+
+                      ),
+                      child: Text('Add Gift',style: TextStyle(color: Colors.purple),),
                     ),
 
                   // Buttons Section
