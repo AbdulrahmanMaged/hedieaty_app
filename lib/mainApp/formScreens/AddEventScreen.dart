@@ -24,8 +24,8 @@ class _AddEventScreenState extends State<AddEventScreen> {
   List<Map<String, dynamic>> _gifts = []; // Stores the list of gifts
   TextEditingController _giftNameController = TextEditingController();
   TextEditingController _giftDescriptionController = TextEditingController();
-  TextEditingController _priceFromController = TextEditingController();
-  TextEditingController _priceToController = TextEditingController();
+  TextEditingController _giftPriceFromController = TextEditingController();
+  TextEditingController _giftPriceToController = TextEditingController();
   String _giftCategory = 'Electronic'; // Default category
   String _giftStatus = 'Available'; // Default status
 
@@ -48,7 +48,7 @@ class _AddEventScreenState extends State<AddEventScreen> {
 
   // Add Gift to the List
   void _addGift() {
-    if (_giftNameController.text.isEmpty || _priceFromController.text.isEmpty || _priceToController.text.isEmpty) {
+    if (_giftNameController.text.isEmpty || _giftPriceFromController.text.isEmpty || _giftPriceToController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Please fill all required gift fields.')),
       );
@@ -61,14 +61,15 @@ class _AddEventScreenState extends State<AddEventScreen> {
         'description': _giftDescriptionController.text,
         'category': _giftCategory,
         'status': _giftStatus,
-        'priceRange': '${_priceFromController.text} - ${_priceToController.text}',
+        'priceRange': '${_giftPriceFromController.text} - ${_giftPriceToController.text}',
+        'pledgedBy':"" ,
       });
 
       // Clear the gift fields and close the subsection
       _giftNameController.clear();
       _giftDescriptionController.clear();
-      _priceFromController.clear();
-      _priceToController.clear();
+      _giftPriceFromController.clear();
+      _giftPriceToController.clear();
       _giftCategory = 'Electronic';
       _giftStatus = 'Available';
       _isAddingGift = false;
@@ -339,16 +340,24 @@ class _AddEventScreenState extends State<AddEventScreen> {
                           ),
                           SizedBox(height: 10),
                           //
-                          TextField(
-                            controller: _priceFromController,
-                            decoration: InputDecoration(labelText: 'Price Starts From'),
-                            keyboardType: TextInputType.numberWithOptions(decimal: true),
-                          ),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: TextField(
+                                  controller: _giftPriceFromController,
+                                  decoration: InputDecoration(labelText: 'Price Starts From'),
+                                  keyboardType: TextInputType.numberWithOptions(decimal: true),
+                                  ),
+                              ),
                           SizedBox(height: 10),
-                          TextField(
-                            controller: _priceToController,
+                              Expanded(
+                                child: TextField(
+                            controller: _giftPriceToController,
                             decoration: InputDecoration(labelText: 'Max price'),
                             keyboardType: TextInputType.numberWithOptions(decimal: true),
+                          ),
+                          ),
+                            ],
                           ),
                           SizedBox(height: 10),
                           DropdownButton<String>(

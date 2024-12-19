@@ -103,7 +103,6 @@ class _ProfileWidgetState extends State<ProfileWidget> {
           .collection('events')
           .where('userId', isEqualTo: uid) // Fetch events for current user
           .get();
-print('the user id is: $uid');
 
       setState(() {
         _events = snapshot.docs.map((doc) {

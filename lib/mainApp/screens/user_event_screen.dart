@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:hedieaty_app/mainApp/screens/user_event_giftList.dart';
 import 'package:intl/intl.dart';
 
 class UserEventScreen extends StatefulWidget {
@@ -157,7 +158,6 @@ class _UserEventScreenState extends State<UserEventScreen> {
             shadowColor: Colors.purple.withOpacity(0.8),
             child: ListTile(
               contentPadding: EdgeInsets.all(10),
-              isThreeLine: true,
               title: Text(event['name'], style: TextStyle(fontSize: 18)),
               subtitle: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -169,6 +169,26 @@ class _UserEventScreenState extends State<UserEventScreen> {
                   ),
                 ],
               ),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min, // Ensures the Row takes only the necessary space
+                children: [
+                  Text(
+                    'View gift list',
+                    style: TextStyle(fontSize: 14, color: Colors.purple),
+                  ),
+                  SizedBox(width: 4), // Add spacing between the label and icon
+                  Icon(Icons.arrow_forward_ios, size: 16, color: Colors.purple),
+                ],
+              ),
+              onTap: () {
+                // Navigate to user_event_giftList
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => UserEventGiftList(eventId: event['id']),
+                  ),
+                );
+              },
             ),
           );
         },

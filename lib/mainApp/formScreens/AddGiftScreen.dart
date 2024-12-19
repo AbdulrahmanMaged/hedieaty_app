@@ -1,1 +1,0 @@
-// a pop up menu lets you choose from a list of your events and when clicked it navigates to edit the event

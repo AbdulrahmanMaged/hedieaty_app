@@ -12,12 +12,13 @@ class TopHomeBar extends StatelessWidget implements PreferredSizeWidget {
 
   // Fetch user first name from Firestore
   Future<String> _getUserFirstName() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
+    final currentUserId = FirebaseAuth.instance.currentUser;
+
+    if (currentUserId != null) {
       // Get the current user's document from Firestore
       DocumentSnapshot userDoc = await FirebaseFirestore.instance
           .collection('users')
-          .doc(user.uid)
+          .doc(currentUserId.uid)
           .get();
 
       // Return the first name (assuming the field is 'firstName')
@@ -27,6 +28,7 @@ class TopHomeBar extends StatelessWidget implements PreferredSizeWidget {
     }
     return 'User'; // Default fallback if user is not logged in
   }
+
 
   @override
   Widget build(BuildContext context) {

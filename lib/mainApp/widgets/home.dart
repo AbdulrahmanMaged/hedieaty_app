@@ -8,7 +8,9 @@ import 'package:hedieaty_app/mainApp/screens/my_gifts.dart';
 import 'package:hedieaty_app/mainApp/screens/my_profile.dart';
 import 'package:hedieaty_app/mainApp/widgets/bottom_nav_bar.dart';
 import 'package:hedieaty_app/mainApp/widgets/top_home_bar.dart';
+import 'package:intl/intl.dart';
 
+import '../formScreens/EditAddInEvents.dart';
 import '../screens/all_events_screen.dart';
 import '../formScreens//AddEventScreen.dart';
 import '../screens/user_event_screen.dart';
@@ -26,6 +28,7 @@ class _HomeState extends State<Home> {
   final eventsScreen = EventsScreen(onEventAdded: () {});
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   List<Map<String, dynamic>> _friends = [];
+  final currentUserId = FirebaseAuth.instance.currentUser?.uid;
 
   @override
   void initState() {
@@ -36,7 +39,6 @@ class _HomeState extends State<Home> {
   /// Fetch Friends Data
   Future<void> _fetchFriends() async {
     try {
-      final currentUserId = FirebaseAuth.instance.currentUser?.uid;
       if (currentUserId == null) {
         throw Exception("No user logged in");
       }
@@ -104,7 +106,17 @@ class _HomeState extends State<Home> {
                     : "No Upcoming Events",
                 style: TextStyle(color: Colors.grey[700]),
               ),
-              trailing: Icon(Icons.arrow_forward_ios, size: 16),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min, // Ensures the Row takes only the necessary space
+                children: [
+                  Text(
+                    'View events',
+                    style: TextStyle(fontSize: 14, color: Colors.purple),
+                  ),
+                  SizedBox(width: 4), // Add spacing between the label and icon
+                  Icon(Icons.arrow_forward_ios, size: 16, color: Colors.purple),
+                ],
+              ),
               onTap: () {
                 // Navigate to user_event_screen
                 Navigator.push(
@@ -154,6 +166,124 @@ class _HomeState extends State<Home> {
       debugDeleteTable('nothing');
     }
   }
+  void _showEventPicker(BuildContext context) async {
+    // Fetch events for the current user
+    if (currentUserId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: User not authenticated!'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    List<Map<String, dynamic>> userEvents = [];
+
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('events')
+          .where('userId', isEqualTo: currentUserId)
+          .get();
+
+      userEvents = snapshot.docs.map((doc) {
+        final data = doc.data();
+        return {
+          'id': doc.id,
+          'name': data['name'],
+          'status': data['status'],
+          'date': data['date'],
+        };
+      }).toList();
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error fetching events: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    // Show the dialog
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(
+            'Pick an event to add a new gift in',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.purple,
+            ),
+          ),
+          content: userEvents.isEmpty
+              ? Text(
+            'No events found',
+            style: TextStyle(color: Colors.grey),
+          )
+              : Container(
+            width: double.maxFinite,
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: userEvents.length,
+              itemBuilder: (context, index) {
+                final event = userEvents[index];
+                return ListTile(
+                  contentPadding: EdgeInsets.all(10),
+                  title: Text(event['name'], style: TextStyle(fontSize: 18)),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Status: ${event['status']}'),
+                      SizedBox(height: 2),
+                      Text(
+                        'Date: ${event['date'] != null ? DateFormat('dd-MMM-yyyy').format(event['date'].toDate()) : 'N/A'}',
+                      ),
+                    ],
+                  ),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min, // Ensures the Row takes only the necessary space
+                    children: [
+                      Text(
+                        'Add gift',
+                        style: TextStyle(fontSize: 14, color: Colors.purple),
+                      ),
+                      SizedBox(width: 4), // Add spacing between the label and icon
+                      Icon(Icons.arrow_forward_ios, size: 16, color: Colors.purple),
+                    ],
+                  ),
+                  onTap: () {
+                    Navigator.pop(context); // Close the dialog
+                    // Navigate to user_event_giftList
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => EditAddInEvents(eventId: event['id']),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context); // Close the dialog
+              },
+              child: Text(
+                'Cancel',
+                style: TextStyle(color: Colors.red),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
 
   // Handle the selection from the top bar dropdown menu
   void _onMenuSelected(String value) {
@@ -169,8 +299,12 @@ class _HomeState extends State<Home> {
       );
     } else if (value == 'edit_or_new_gift') {
       // Navigate to the new gift list page
+      _showEventPicker(context);
     }
   }
+
+
+
 
   //calls print local db tables
   void debugDatabase() async {
