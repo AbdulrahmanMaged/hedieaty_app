@@ -22,11 +22,13 @@ class _EditAddInEventsState extends State<EditAddInEvents> {
   TextEditingController _giftPriceToController = TextEditingController();
   String _giftCategory = 'Electronic';
   String _giftStatus = 'Available';
+  bool _isEditingGift = false;
 
   bool _isAddingGift = false; // Tracks if the gift section is open
   DateTime? _selectedDate;
   List<Map<String, dynamic>> _gifts = [];
   bool _isLoading = true;
+  String giftForEditId="";
 
   @override
   void initState() {
@@ -285,14 +287,15 @@ class _EditAddInEventsState extends State<EditAddInEvents> {
                         IconButton(
                           icon: Icon(Icons.edit),
                           onPressed: () {
-                            // Edit logic here
+                            giftForEditId=gift['id'];
+                            _editGift(gift);
                           },
                         ),
                         IconButton(
                           icon: Icon(Icons.delete),
                           onPressed: () {
                             setState(() {
-                              _gifts.remove(gift);
+                              _deleteGift(gift['id']);
                             });
                           },
                         ),
@@ -315,8 +318,8 @@ class _EditAddInEventsState extends State<EditAddInEvents> {
                 ),
 
               // Gift Section
-            if (_isAddingGift)
-              _buildGiftSection(),
+            if (_isAddingGift || _isEditingGift)
+              _buildGiftSection(giftForEditId),
 
               SizedBox(height: 20),
 
@@ -361,6 +364,93 @@ class _EditAddInEventsState extends State<EditAddInEvents> {
       ),
     );
   }
+
+  Future<void> _deleteGift(String giftId) async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('events')
+          .doc(widget.eventId) // Navigate to the correct event
+          .collection('gifts') // Access the gifts subcollection
+          .doc(giftId) // Locate the specific gift document
+          .delete();
+
+      setState(() {
+        _gifts.removeWhere((gift) => gift['id'] == giftId); // Remove from local list
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Gift deleted successfully!', style: TextStyle(color: Colors.white)), backgroundColor: Colors.green),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error deleting gift: $e', style: TextStyle(color: Colors.white)), backgroundColor: Colors.red),
+      );
+    }
+  }
+
+  void _editGift(Map<String, dynamic> gift) {
+    setState(() {
+      _isEditingGift = true; // Mark that the user is editing a gift
+      _giftNameController.text = gift['name'];
+      _giftDescriptionController.text = gift['description'];
+      _giftPriceFromController.text = gift['priceRange'].split('-')[0].trim();
+      _giftPriceToController.text = gift['priceRange'].split('-')[1].trim();
+      _giftCategory = gift['category'];
+      //_selectedGiftId = gift['id']; // Save the gift ID to identify it for updating
+
+    });
+  }
+
+  Future<void> _saveEditedGift(String giftId) async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('events')
+          .doc(widget.eventId)
+          .collection('gifts')
+          .doc(giftId) // Update the specific gift
+          .update({
+        'name': _giftNameController.text,
+        'description': _giftDescriptionController.text,
+        'priceRange': '${_giftPriceFromController.text} - ${_giftPriceToController.text}',
+        'category': _giftCategory,
+      });
+
+      setState(() {
+        // Update the local list with the edited gift data
+        final index = _gifts.indexWhere((gift) => gift['id'] == giftId);
+        if (index != -1) {
+          _gifts[index] = {
+            'id': giftId,
+            'name': _giftNameController.text,
+            'description': _giftDescriptionController.text,
+            'priceRange': '${_giftPriceFromController.text} - ${_giftPriceToController.text}',
+            'category': _giftCategory,
+          };
+        }
+        _isEditingGift = false; // Reset editing state
+        // Refresh gifts and reset gift form
+        _fetchGifts();
+        _giftNameController.clear();
+        _giftDescriptionController.clear();
+        _giftPriceFromController.clear();
+        _giftPriceToController.clear();
+        _giftCategory = 'Electronic';
+        _giftStatus = 'Available';
+        _isAddingGift = false;
+
+
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Gift updated successfully!', style: TextStyle(color: Colors.white)), backgroundColor: Colors.green),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error updating gift: $e', style: TextStyle(color: Colors.white)), backgroundColor: Colors.red),
+      );
+    }
+  }
+
 
   Widget _buildEventDetailsSection() {
     return Padding(
@@ -479,7 +569,7 @@ class _EditAddInEventsState extends State<EditAddInEvents> {
     );
   }
 
-  Widget _buildGiftSection() {
+  Widget _buildGiftSection(String giftId) {
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: SingleChildScrollView(
@@ -549,13 +639,18 @@ class _EditAddInEventsState extends State<EditAddInEvents> {
                 ),
                 SizedBox(height: 10),
                 ElevatedButton(
-                  onPressed: _addGift,
+                  onPressed: _isEditingGift
+                      ? () => _saveEditedGift(giftId) // Pass the ID dynamically
+                      : _addGift,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.purple,
-
                   ),
-                  child: Text('Submit Gift',style: TextStyle(color: Colors.white,)),
+                  child: Text(
+                    _isEditingGift ? 'Save Changes' : 'Submit Gift',
+                    style: TextStyle(color: Colors.white),
+                  ),
                 ),
+
               ],
             ),
           ),

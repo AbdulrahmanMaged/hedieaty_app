@@ -367,7 +367,7 @@ class _AddEventScreenState extends State<AddEventScreen> {
                                 _giftCategory = value!;
                               });
                             },
-                            items: ['Electronic', 'Games']
+                            items: ['Electronic', 'Games','Fashion','Books','Personal Care']
                                 .map((category) => DropdownMenuItem(
                               value: category,
                               child: Text(category),
