@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../services/database/local/database_helper.dart';
+import '../formScreens/EditAddInEvents.dart';
 import '../screens/my_pledged_gifts.dart';
 import '../screens/welcomeScreen.dart';
 
@@ -125,6 +126,27 @@ class _ProfileWidgetState extends State<ProfileWidget> {
       });
     }
   }
+  Future<void> _deleteEvent(String eventId) async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('events')
+          .doc(eventId) // Navigate to the correct event
+          .delete();
+
+      setState(() {
+        _events.removeWhere((event) => event['id'] == eventId); // Remove from local list
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Event deleted successfully!', style: TextStyle(color: Colors.white)), backgroundColor: Colors.green),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error deleting Event: $e', style: TextStyle(color: Colors.white)), backgroundColor: Colors.red),
+      );
+    }
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -360,9 +382,14 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                       trailing: PopupMenuButton<String>(
                         onSelected: (value) {
                           if (value == 'Edit') {
-                            //_editEvent(event['id']);
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => EditAddInEvents(eventId: event['id']),
+                              ),
+                            );
                           } else if (value == 'Delete') {
-                            //_deleteEvent(event['id']);
+                            _deleteEvent(event['id']);
                           }
                         },
                         itemBuilder: (context) => [
@@ -385,14 +412,18 @@ class _ProfileWidgetState extends State<ProfileWidget> {
 
 
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
           // Navigate to MyPledgedScreen
-          //print('the events: ${_events['name']}');
-        }, // Gift icon for the button
+        },
         backgroundColor: Colors.purple[600],
-        child: Icon(Icons.card_giftcard,color: Colors.white,), // Match the app's theme
+        icon: Icon(Icons.card_giftcard, color: Colors.white),
+        label: Text(
+          'Pledged Gifts',
+          style: TextStyle(color: Colors.white),
+        ), // Add your label here
       ),
+
     );
   }
 }
