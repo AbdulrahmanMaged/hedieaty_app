@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hedieaty_app/services/database/local/database_helper.dart';
-import 'package:hedieaty_app/mainApp/screens/friends.dart';
+import 'package:hedieaty_app/mainApp/screens/friendsScreen.dart';
 import 'package:hedieaty_app/mainApp/screens/my_gifts.dart';
 import 'package:hedieaty_app/mainApp/screens/my_profile.dart';
 import 'package:hedieaty_app/mainApp/widgets/bottom_nav_bar.dart';
@@ -33,34 +33,7 @@ class _HomeState extends State<Home> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: TopHomeBar(onMenuSelected: _onMenuSelected),
-      body: FutureBuilder<List<User>>(
-        future: _fetchUsers(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          } else if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
-          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(child: Text('No users found.'));
-          }
-
-          final users = snapshot.data!;
-          return ListView.builder(
-            itemCount: users.length,
-            itemBuilder: (context, index) {
-              final user = users[index];
-              return ListTile(
-                leading: CircleAvatar(
-                  child: Text(user.name[0].toUpperCase()),
-                ),
-                title: Text(user.name),
-                subtitle: Text(user.email),
-                trailing: Text(user.preferences ?? 'No preferences'),
-              );
-            },
-          );
-        },
-      ),
+      body: Text('Hello there'),
       bottomNavigationBar: BottomNavBar(
         currentIndex: _currentIndex,
         onTap: _onNavBarTapped,

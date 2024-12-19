@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 import '../../services/database/local/database_helper.dart';
 import '../screens/my_pledged_gifts.dart';
 import '../screens/welcomeScreen.dart';
@@ -18,18 +19,22 @@ class _ProfileWidgetState extends State<ProfileWidget> {
   Map<String, dynamic>? userData;
   bool isEditing = false; // Tracks editing state
   bool isExpanded = false; // Tracks expanded state for the section
+  bool _isLoading = false;
+  List<Map<String, dynamic>> _events = [];
+  // Get the current user's UID
+  final uid = FirebaseAuth.instance.currentUser?.uid;
 
   @override
   void initState() {
     super.initState();
     _fetchUserData();
+    fetchEvents();
   }
 
   /// Fetches user data from Firestore
   Future<void> _fetchUserData() async {
     try {
       // Get the current user's UID
-      final uid = _auth.currentUser?.uid;
       if (uid == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('No logged-in user found.')),
@@ -61,7 +66,6 @@ class _ProfileWidgetState extends State<ProfileWidget> {
 
     try {
       // Get the current user's UID
-      final uid = _auth.currentUser?.uid;
       if (uid == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('user not-found')),
@@ -86,6 +90,41 @@ class _ProfileWidgetState extends State<ProfileWidget> {
       context,
       MaterialPageRoute(builder: (context) => WelcomeScreen()),
     );
+  }
+
+  /// Fetch My Events from Firestore
+  Future<void> fetchEvents() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('events')
+          .where('userId', isEqualTo: uid) // Fetch events for current user
+          .get();
+print('the user id is: $uid');
+
+      setState(() {
+        _events = snapshot.docs.map((doc) {
+          final data = doc.data();
+          return {
+            'id': doc.id,
+            'name': data['name'],
+            'status': data['status'],
+            'date': data['date'],
+          };
+        }).toList();
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error fetching events: $e')),
+      );
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   @override
@@ -118,8 +157,7 @@ class _ProfileWidgetState extends State<ProfileWidget> {
           ? Center(child: CircularProgressIndicator())
           : Padding(
         padding: const EdgeInsets.all(16.0),
-        child: SingleChildScrollView(
-          child: Column(
+        child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // My Personal Info Section with Arrow and Glow
@@ -289,43 +327,72 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                 ),
               ),
               SizedBox(height: 20),
-
-              // Empty Section Placeholder
-              Card(
-                elevation: 4,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    children: [
-                      Text(
-                        'Upcoming Feature',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.grey,
-                        ),
+              Expanded(
+                child: _isLoading
+                  ? Center(child: CircularProgressIndicator())
+                  : _events.isEmpty
+                  ? Center(child: Text('No events found'))
+                  : ListView.builder(
+                itemCount: _events.length,
+                itemBuilder: (context, index) {
+                  final event = _events[index];
+                  return  Card(
+                    margin: EdgeInsets.symmetric(vertical: 10.0, horizontal: 15.0),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10.0),
+                    ),
+                    elevation: 8.0, // Box shadow effect
+                    color: Colors.grey[200], // Background color
+                    shadowColor: Colors.purple.withOpacity(0.8), // Shadow color with opacity
+                    child:ListTile(
+                      contentPadding: EdgeInsets.all(10),
+                      isThreeLine: true,
+                      title: Text(event['name'], style: TextStyle(fontSize: 18)),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Status: ${event['status']}'),
+                          SizedBox(height: 2),  // Add spacing between the status and date
+                          Text(
+                            'Date: ${event['date'] != null ? DateFormat('dd-MMM-yyyy').format(event['date'].toDate()) : 'N/A'}',
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                ),
-              ),
+                      trailing: PopupMenuButton<String>(
+                        onSelected: (value) {
+                          if (value == 'Edit') {
+                            //_editEvent(event['id']);
+                          } else if (value == 'Delete') {
+                            //_deleteEvent(event['id']);
+                          }
+                        },
+                        itemBuilder: (context) => [
+                          PopupMenuItem(
+                            value: 'Edit',
+                            child: Text('Edit'),
+                          ),
+                          PopupMenuItem(
+                            value: 'Delete',
+                            child: Text('Delete'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),)
             ],
           ),
-        ),
+
+
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           // Navigate to MyPledgedScreen
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => WelcomeScreen()), // add pledged screen
-          );
-        },
-        child: Icon(Icons.card_giftcard,color: Colors.white,), // Gift icon for the button
-        backgroundColor: Colors.purple[600], // Match the app's theme
+          //print('the events: ${_events['name']}');
+        }, // Gift icon for the button
+        backgroundColor: Colors.purple[600],
+        child: Icon(Icons.card_giftcard,color: Colors.white,), // Match the app's theme
       ),
     );
   }

@@ -5,7 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 class AddEventScreen extends StatefulWidget {
-   final Function onEventAdded; // Callback function
+  final Function onEventAdded; // Callback function
   AddEventScreen({required this.onEventAdded}); // Constructor to accept the callback
 
   @override
@@ -19,6 +19,17 @@ class _AddEventScreenState extends State<AddEventScreen> {
   TextEditingController _descriptionController = TextEditingController();
   DateTime? _selectedDate;
 
+  // Gift Section
+  bool _isAddingGift = false; // Tracks if the gift section is open
+  List<Map<String, dynamic>> _gifts = []; // Stores the list of gifts
+  TextEditingController _giftNameController = TextEditingController();
+  TextEditingController _giftDescriptionController = TextEditingController();
+  TextEditingController _priceFromController = TextEditingController();
+  TextEditingController _priceToController = TextEditingController();
+  String _giftCategory = 'Electronic'; // Default category
+  String _giftStatus = 'Available'; // Default status
+
+  bool _isLoading = false;
 
   // Show DatePicker for selecting event date
   Future<void> _selectDate(BuildContext context) async {
@@ -35,23 +46,55 @@ class _AddEventScreenState extends State<AddEventScreen> {
     }
   }
 
-  /// Add Event to Firestore
-  Future<void> _addEvent() async {
-    if (_nameController.text.isEmpty || _selectedDate == null) {
+  // Add Gift to the List
+  void _addGift() {
+    if (_giftNameController.text.isEmpty || _priceFromController.text.isEmpty || _priceToController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Please fill all required fields.',style: TextStyle(color: Colors.white),),
-            backgroundColor: Colors.red),
+        SnackBar(content: Text('Please fill all required gift fields.')),
       );
       return;
     }
+
+    setState(() {
+      _gifts.add({
+        'name': _giftNameController.text,
+        'description': _giftDescriptionController.text,
+        'category': _giftCategory,
+        'status': _giftStatus,
+        'priceRange': '${_priceFromController.text} - ${_priceToController.text}',
+      });
+
+      // Clear the gift fields and close the subsection
+      _giftNameController.clear();
+      _giftDescriptionController.clear();
+      _priceFromController.clear();
+      _priceToController.clear();
+      _giftCategory = 'Electronic';
+      _giftStatus = 'Available';
+      _isAddingGift = false;
+    });
+  }
+
+  // Add Event to Firestore with Gifts
+  Future<void> _addEvent() async {
+    if (_nameController.text.isEmpty || _selectedDate == null || _gifts.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Please fill all required fields and add at least one gift.')),
+      );
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
 
     try {
       final currentUserID = FirebaseAuth.instance.currentUser?.uid;
       // Get the current date (without time) to compare with event date
       final DateNotFinal = DateTime.now();
       final CurrentDate = DateTime(DateNotFinal.year, DateNotFinal.month, DateNotFinal.day); // Set time to 00:00:00.000
-
       final eventDate = _selectedDate!;
+
       // Determine the event status based on the event date
       String eventStatus = 'Upcoming'; // Default value
 
@@ -61,30 +104,44 @@ class _AddEventScreenState extends State<AddEventScreen> {
         eventStatus = 'Current'; // Event is today
       }
 
-      await FirebaseFirestore.instance.collection('events').add({
+      // Save event
+      final eventRef = await FirebaseFirestore.instance.collection('events').add({
         'name': _nameController.text,
-        'status': eventStatus, // You can modify this field based on your needs
+        'status': eventStatus,
         'date': Timestamp.fromDate(_selectedDate!),
         'location': _locationController.text,
         'description': _descriptionController.text,
         'userId': currentUserID,
       });
 
+      // Save gifts as a subcollection
+      for (var gift in _gifts) {
+        await eventRef.collection('gifts').add({
+          'name': gift['name'],
+          'description': gift['description'],
+          'category': gift['category'],
+          'status': gift['status'],
+          'priceRange': gift['priceRange'],
+          'eventId': eventRef.id,
+        });
+      }
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Event added successfully!',style: TextStyle(color: Colors.white),),
-        backgroundColor: Colors.green),
+            backgroundColor: Colors.green),
       );
 
-      // After saving the event, trigger the callback to refresh events on the main screen
-      widget.onEventAdded();  // Call the callback to refresh the event list
-
-      Navigator.pop(context); // Close the screen after saving
-
+      widget.onEventAdded(); // Notify parent widget
+      Navigator.pop(context); // Close screen
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error adding event: $e',style: TextStyle(color: Colors.white),),
             backgroundColor: Colors.red),
       );
+    }finally {
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
@@ -98,163 +155,298 @@ class _AddEventScreenState extends State<AddEventScreen> {
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.purple.withOpacity(0.8),
-                spreadRadius: 3,
-                blurRadius: 8,
-                offset: Offset(0, 3), // Shadow position
-              ),
-            ],
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Label and Event Name Field
-                Text('Event Name', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.purple)),
-                SizedBox(height: 5),
-                TextFormField(
-                  controller: _nameController,
-                  decoration: InputDecoration(
-                    labelText: 'Enter Event Name - short name please',
-                    border: OutlineInputBorder(),
-                    filled: true,
-                    fillColor: Colors.grey[200],
-                    enabledBorder: OutlineInputBorder(
-                      borderSide: BorderSide(
-                          color: Colors.purple[300]!, width: 2),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderSide: BorderSide(
-                          color: Colors.purple[600]!, width: 2),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
+        child: SingleChildScrollView(
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.purple.withOpacity(0.8),
+                  spreadRadius: 3,
+                  blurRadius: 8,
+                  offset: Offset(0, 3), // Shadow position
                 ),
-                SizedBox(height: 10),
-
-                // Label and Event Location Field
-                Text('Location', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.purple)),
-                SizedBox(height: 5),
-                TextFormField(
-                  controller: _locationController,
-                  decoration: InputDecoration(
-                    labelText: 'Enter Location - Attach a Link/Name of place',
-                    border: OutlineInputBorder(),
-                    filled: true,
-                    fillColor: Colors.grey[200],
-                    enabledBorder: OutlineInputBorder(
-                      borderSide: BorderSide(
-                          color: Colors.purple[300]!, width: 2),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderSide: BorderSide(
-                          color: Colors.purple[600]!, width: 2),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                ),
-                SizedBox(height: 10),
-
-                // Label and Event Description Field
-                Text('Description', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.purple)),
-                SizedBox(height: 5),
-                TextFormField(
-                  controller: _descriptionController,
-                  decoration: InputDecoration(
-                    labelText: 'Enter Description - no more than 250 words',
-                    border: OutlineInputBorder(),
-                    filled: true,
-                    fillColor: Colors.grey[200],
-                    enabledBorder: OutlineInputBorder(
-                      borderSide: BorderSide(
-                          color: Colors.purple[300]!, width: 2),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderSide: BorderSide(
-                          color: Colors.purple[600]!, width: 2),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                ),
-                SizedBox(height: 10),
-
-                // Label and Event Date Picker
-                Text('Event Date', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.purple)),
-                SizedBox(height: 5),
-                GestureDetector(
-                  onTap: () => _selectDate(context), // Show DatePicker when tapped
-                  child: AbsorbPointer(
-                    child: TextFormField(
-                      controller: TextEditingController(
-                        text: _selectedDate != null
-                            ? DateFormat('dd-MM-yyyy').format(_selectedDate!)
-                            : 'Select Date',
-                      ),
-                      decoration: InputDecoration(
-                        //labelText: 'Event Date',
-                        border: OutlineInputBorder(),
-                        filled: true,
-                        fillColor: Colors.grey[200],
-                        enabledBorder: OutlineInputBorder(
-                          borderSide: BorderSide(
-                              color: Colors.purple[300]!, width: 2),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderSide: BorderSide(
-                              color: Colors.purple[600]!, width: 2),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        suffixIcon: Icon(
-                          Icons.calendar_today,
-                          color: Colors.purple,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                SizedBox(height: 20),
-                // Save Event Button
-            Center(
-              child:
-                // Save Event Button
-                ElevatedButton(
-                  onPressed: _addEvent, // Call the _addEvent function
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.purple, // Button color
-                    padding: EdgeInsets.symmetric(vertical: 16, horizontal: 32),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    elevation: 5,
-                    shadowColor: Colors.purple.withOpacity(0.5),
-                  ),
-                  child: Text(
-                    'Post Event',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-            ),
               ],
             ),
-          ),
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Event Name Field
+                  Text('Event Name', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.purple)),
+                  SizedBox(height: 5),
+                  TextFormField(
+                    controller: _nameController,
+                    decoration: InputDecoration(
+                      labelText: 'Enter Event Name - short name please',
+                      border: OutlineInputBorder(),
+                      filled: true,
+                      fillColor: Colors.grey[200],
+                      enabledBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: Colors.purple[300]!, width: 2),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: Colors.purple[600]!, width: 2),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 10),
 
+                  // Event Location Field
+                  Text('Location', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.purple)),
+                  SizedBox(height: 5),
+                  TextFormField(
+                    controller: _locationController,
+                    decoration: InputDecoration(
+                      labelText: 'Enter Location - Attach a Link/Name of place',
+                      border: OutlineInputBorder(),
+                      filled: true,
+                      fillColor: Colors.grey[200],
+                      enabledBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: Colors.purple[300]!, width: 2),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: Colors.purple[600]!, width: 2),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 10),
+
+                  // Event Description Field
+                  Text('Description', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.purple)),
+                  SizedBox(height: 5),
+                  TextFormField(
+                    controller: _descriptionController,
+                    decoration: InputDecoration(
+                      labelText: 'Enter Description - no more than 250 words',
+                      border: OutlineInputBorder(),
+                      filled: true,
+                      fillColor: Colors.grey[200],
+                      enabledBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: Colors.purple[300]!, width: 2),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: Colors.purple[600]!, width: 2),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 10),
+
+                  // Event Date Picker
+                  Text('Event Date', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.purple)),
+                  SizedBox(height: 5),
+                  GestureDetector(
+                    onTap: () => _selectDate(context), // Show DatePicker when tapped
+                    child: AbsorbPointer(
+                      child: TextFormField(
+                        controller: TextEditingController(
+                          text: _selectedDate != null
+                              ? DateFormat('dd-MM-yyyy').format(_selectedDate!)
+                              : 'Select Date',
+                        ),
+                        decoration: InputDecoration(
+                          border: OutlineInputBorder(),
+                          filled: true,
+                          fillColor: Colors.grey[200],
+                          enabledBorder: OutlineInputBorder(
+                            borderSide: BorderSide(color: Colors.purple[300]!, width: 2),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderSide: BorderSide(color: Colors.purple[600]!, width: 2),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          suffixIcon: Icon(
+                            Icons.calendar_today,
+                            color: Colors.purple,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 20),
+
+                  // Add Gift Section
+                  if (_isAddingGift)
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.grey[200],
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.purple.withOpacity(0.5),
+                            spreadRadius: 2,
+                            blurRadius: 6,
+                            offset: Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      padding: EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Gift Name', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.purple)),
+                          SizedBox(height: 5),
+                          TextFormField(
+                            controller: _giftNameController,
+                            decoration: InputDecoration(
+                              labelText: 'Enter Gift Name',
+                              border: OutlineInputBorder(),
+                              filled: true,
+                              fillColor: Colors.grey[200],
+                              enabledBorder: OutlineInputBorder(
+                                borderSide: BorderSide(
+                                    color: Colors.purple[300]!, width: 2),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderSide: BorderSide(
+                                    color: Colors.purple[600]!, width: 2),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                            ),
+                          ),
+                          //
+                          SizedBox(height: 10),
+
+                          Text('Description', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.purple)),
+                          SizedBox(height: 5),
+                          TextField(
+                            controller: _giftDescriptionController,
+                            decoration: InputDecoration(labelText: 'Gift Description',
+                            border: OutlineInputBorder(),
+                            filled: true,
+                            fillColor: Colors.grey[200],
+                              enabledBorder: OutlineInputBorder(
+                                borderSide: BorderSide(
+                                    color: Colors.purple[300]!, width: 2),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderSide: BorderSide(
+                                    color: Colors.purple[600]!, width: 2),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: 10),
+                          //
+                          TextField(
+                            controller: _priceFromController,
+                            decoration: InputDecoration(labelText: 'Price Starts From'),
+                            keyboardType: TextInputType.numberWithOptions(decimal: true),
+                          ),
+                          SizedBox(height: 10),
+                          TextField(
+                            controller: _priceToController,
+                            decoration: InputDecoration(labelText: 'Max price'),
+                            keyboardType: TextInputType.numberWithOptions(decimal: true),
+                          ),
+                          SizedBox(height: 10),
+                          DropdownButton<String>(
+                            value: _giftCategory,
+                            onChanged: (value) {
+                              setState(() {
+                                _giftCategory = value!;
+                              });
+                            },
+                            items: ['Electronic', 'Games']
+                                .map((category) => DropdownMenuItem(
+                              value: category,
+                              child: Text(category),
+                            ))
+                                .toList(),
+                          ),
+                          SizedBox(height: 10),
+                          ElevatedButton(
+                            onPressed: _addGift,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.purple,
+
+                            ),
+                            child: Text('Submit Gift',style: TextStyle(color: Colors.white,)),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                  // Display Added Gifts
+                  ..._gifts.map((gift) {
+                    return ListTile(
+                      title: Text(gift['name']),
+                      subtitle: Text('${gift['priceRange']} - ${gift['category']}'),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: Icon(Icons.edit),
+                            onPressed: () {
+                              // Edit logic here
+                            },
+                          ),
+                          IconButton(
+                            icon: Icon(Icons.delete),
+                            onPressed: () {
+                              setState(() {
+                                _gifts.remove(gift);
+                              });
+                            },
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                  SizedBox(height: 20),
+
+                  // Add Gift Button
+                  if (!_isAddingGift)
+                    ElevatedButton(
+                      onPressed: () {
+                        setState(() {
+                          _isAddingGift = true;
+                        });
+                      },
+                      child: Text('Add Gift'),
+                    ),
+
+                  // Buttons Section
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      ElevatedButton(
+                        onPressed: _gifts.isNotEmpty ? null : () {},
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: _gifts.isNotEmpty ? Colors.green : Colors.grey,                        ), // No implementation for now
+                        child: Text('Save as Draft',
+                        style: TextStyle(fontSize: 16,
+                          fontWeight: FontWeight.bold,color: _gifts.isNotEmpty ? Colors.black : Colors.white,),),
+                      ),
+                      ElevatedButton(
+                        onPressed: _gifts.isNotEmpty ? _addEvent : null,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: _gifts.isNotEmpty ? Colors.green : Colors.grey,
+                        ),
+                        child: Text('Post Event',
+                        style: TextStyle(fontSize: 16,
+                          fontWeight: FontWeight.bold,color: _gifts.isNotEmpty ? Colors.black : Colors.white,),),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
         ),
       ),
     );
   }
+
 }
