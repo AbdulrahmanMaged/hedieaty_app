@@ -32,11 +32,11 @@ class BottomNavBar extends StatelessWidget {
           label: 'Friends',
           tooltip: 'View/Add Friends',
         ),
-        BottomNavigationBarItem(
+        /*BottomNavigationBarItem(
           icon: Icon(Icons.card_giftcard_outlined),
           label: 'My Gifts',
           tooltip: 'View Pledged Gifts',
-        ),
+        ),*/
         BottomNavigationBarItem(
           icon: Icon(Icons.card_giftcard_outlined),
           label: 'Events',
@@ -47,7 +47,7 @@ class BottomNavBar extends StatelessWidget {
           label: 'Profile',
           tooltip: 'View Profile',
         ),
-        BottomNavigationBarItem(
+        /*BottomNavigationBarItem(
           icon: Icon(Icons.storage),
           label: 'Local DB',
           tooltip: 'test local',
@@ -56,7 +56,7 @@ class BottomNavBar extends StatelessWidget {
           icon: Icon(Icons.delete_forever),
           label: 'Delete table',
           tooltip: 'test local',
-        ),
+        ),*/
       ],
     );
   }

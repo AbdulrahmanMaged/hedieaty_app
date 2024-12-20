@@ -170,7 +170,8 @@ class _UserEventScreenState extends State<UserEventScreen> {
                 ],
               ),
               trailing: Row(
-                mainAxisSize: MainAxisSize.min, // Ensures the Row takes only the necessary space
+                mainAxisSize: MainAxisSize.min,
+                key: ValueKey('viewGifts'), // Ensures the Row takes only the necessary space
                 children: [
                   Text(
                     'View gift list',

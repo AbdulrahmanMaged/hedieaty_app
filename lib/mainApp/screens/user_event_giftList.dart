@@ -246,6 +246,7 @@ class _UserEventGiftListState extends State<UserEventGiftList> {
                   elevation: 5,
                   shadowColor: Colors.black.withOpacity(0.2),
                 ),
+                key: ValueKey('pledge'),
                 child: Text(
                   gift['status'] == 'Available' ? 'Pledge' : 'Pledged',
                   style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),

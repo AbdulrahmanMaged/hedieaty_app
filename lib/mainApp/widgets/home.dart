@@ -218,6 +218,7 @@ class _HomeState extends State<Home> {
                             size: 16, color: Colors.purple),
                       ],
                     ),
+                    key: ValueKey('viewEvents'),
                     onTap: () {
                       // Navigate to user_event_screen
                       Navigator.push(
@@ -253,13 +254,13 @@ class _HomeState extends State<Home> {
     }else if (index == 1) {
       Navigator.push(context,
           MaterialPageRoute(builder: (context) =>  AddFriends()));
-    } else if (index == 2) {
+    } /*else if (index == 2) {
       Navigator.push(context,
           MaterialPageRoute(builder: (context) =>  MyGifts()));
-    } else if (index == 3) {
+    } */else if (index == 2) {
       Navigator.push(
           context, MaterialPageRoute(builder: (context) =>  eventsScreen));
-    }else if (index == 4) {
+    }else if (index == 3) {
       Navigator.push(
           context, MaterialPageRoute(builder: (context) =>  MyProfile()));
     } else if (index == 5) {

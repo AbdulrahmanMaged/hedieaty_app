@@ -1,0 +1,31 @@
+# Set variables
+$adb = "adb"  # Path to adb command
+$device_id = "your_device_id"  # Replace with your device ID if you have multiple
+$output_dir = "./tests/logs"  # Directory to save logs and recordings
+$test_name = "test_log_in_and_interactions"
+
+# Ensure output directory exists
+if (!(Test-Path -Path $output_dir)) {
+    New-Item -ItemType Directory -Force -Path $output_dir
+}
+
+# Start recording
+Write-Output "Starting screen recording..."
+Start-Process -NoNewWindow -FilePath $adb -ArgumentList "shell screenrecord /sdcard/$test_name.mp4"
+
+# Run Flutter test
+Write-Output "Running Flutter test..."
+flutter drive --target=test_driver/app.dart
+
+# Stop recording after test
+Write-Output "Stopping screen recording..."
+$adb_args = @("shell", "killall", "screenrecord")
+Start-Process -NoNewWindow -FilePath $adb -ArgumentList $adb_args
+
+# Pull video file from the device
+Write-Output "Pulling recorded video..."
+$adb_args_pull = @("pull", "/sdcard/$test_name.mp4", "$output_dir/$test_name.mp4")
+Start-Process -NoNewWindow -FilePath $adb -ArgumentList $adb_args_pull
+
+# Notify completion
+Write-Output "Test completed. Logs and video saved in $output_dir."

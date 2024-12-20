@@ -73,7 +73,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               children: [
                                 // Email
                                 TextFormField(
-                                  key: ValueKey('email'),
+                                  key: ValueKey('emailField'),
                                   validator: (value) {
                                     if (value!.isEmpty || !value.contains('@')) {
                                       return 'Please enter a valid email.';
@@ -92,7 +92,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 SizedBox(height: 16),
                                 // Password
                                 TextFormField(
-                                  key: ValueKey('password'),
+                                  key: ValueKey('passwordField'),
                                   obscureText: !_isPasswordVisible,
                                   validator: (value) {
                                     if (value!.isEmpty) {
@@ -148,6 +148,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   child: Text(
                                     'Login',
                                     style: TextStyle(fontSize: 16, color: Colors.white),
+                                    key: ValueKey('login'),
                                   ),
                                 ),
                               ],

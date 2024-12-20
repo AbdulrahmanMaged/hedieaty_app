@@ -163,13 +163,50 @@ class _ProfileWidgetState extends State<ProfileWidget> {
     }
   }
 
+  void _logOut() async {
+    Navigator.of(context).pushReplacement(PageRouteBuilder(
+      pageBuilder: (context, animation, secondaryAnimation) => WelcomeScreen(), // Replace with your login/welcome screen
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        const begin = Offset(1.0, 0.0); // Slide from right
+        const end = Offset.zero;
+        const curve = Curves.easeInOut;
 
-  void _logOut() {
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => WelcomeScreen()),
-    );
+        var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+        var offsetAnimation = animation.drive(tween);
+
+        return SlideTransition(
+          position: offsetAnimation,
+          child: child,
+        );
+      },
+    ));
   }
+
+
+  Future<void> _confirmLogOut() async {
+    final shouldLogOut = await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Confirm Logout'),
+        content: Text('Are you sure you want to log out?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false), // Cancel
+            child: Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true), // Confirm
+            child: Text('Logout'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldLogOut == true) {
+      _logOut();
+    }
+  }
+
 
   /// Fetch My Events from Firestore
   Future<void> fetchEvents() async {
@@ -249,7 +286,7 @@ class _ProfileWidgetState extends State<ProfileWidget> {
           ),
           IconButton(
             icon: Icon(Icons.logout, color: Colors.white),
-            onPressed: _logOut,
+            onPressed: _confirmLogOut,
             tooltip: 'Log Out',
           ),
         ],
@@ -539,6 +576,7 @@ class _ProfileWidgetState extends State<ProfileWidget> {
               },
               backgroundColor: Colors.purple[600],
               icon: Icon(Icons.card_giftcard, color: Colors.white),
+              key: ValueKey('pledged gifts'),
               label: Text(
                 'Pledged Gifts',
                 style: TextStyle(color: Colors.white),
