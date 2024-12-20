@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:hedieaty_app/services/database/sqlite/database_helper.dart';
 import '../formScreens/editAddInEvents.dart';
+import '../screens/event_drafts.dart';
 import '../screens/my_pledged_gifts.dart';
 import '../screens/welcomeScreen.dart';
 
@@ -503,21 +504,50 @@ class _ProfileWidgetState extends State<ProfileWidget> {
 
 
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          // Navigate to MyPledgedScreen
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => MyPledgedGifts()), //
-          );
-        },
-        backgroundColor: Colors.purple[600],
-        icon: Icon(Icons.card_giftcard, color: Colors.white),
-        label: Text(
-          'Pledged Gifts',
-          style: TextStyle(color: Colors.white),
-        ), // Add your label here
+      floatingActionButton: Stack(
+        fit: StackFit.expand,
+        children: [
+          Positioned(
+            bottom: 80, // Position slightly above the second button
+            right: 16, // Align to the right
+            child: FloatingActionButton.extended(
+              onPressed: () {
+                // Navigate to Event Drafts
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => EventDrafts()), //EventDrafts widget
+                );
+              },
+              backgroundColor: Colors.orange[600], // Different color for differentiation
+              icon: Icon(Icons.drafts, color: Colors.white), // Icon for drafts
+              label: Text(
+                'Event Drafts',
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: 16, // Default floating button position
+            right: 16, // Align to the right
+            child: FloatingActionButton.extended(
+              onPressed: () {
+                // Navigate to My Pledged Gifts
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => MyPledgedGifts()), // Existing navigation
+                );
+              },
+              backgroundColor: Colors.purple[600],
+              icon: Icon(Icons.card_giftcard, color: Colors.white),
+              label: Text(
+                'Pledged Gifts',
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+          ),
+        ],
       ),
+
 
     );
   }

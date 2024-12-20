@@ -263,6 +263,48 @@ Future<List<Map<String, dynamic>>> getUsers() async {
     }
   }
 
+  Future<List<Map<String, dynamic>>> queryEventsByStatus(String status) async {
+    final db = await database;
+
+    try {
+      final result = await db.query(
+        'Events', // Table name
+        where: 'status = ?', // SQL WHERE clause
+        whereArgs: [status], // Replace '?' with the status argument
+      );
+      print('Fetched ${result.length} events with status: $status');
+      return result;
+    } catch (e) {
+      print('Error querying events by status: $e');
+      throw Exception('Failed to fetch events by status');
+    }
+  }
+
+  Future<void> deleteEventById(String eventId) async {
+    final db = await database;
+
+    try {
+      // Delete gifts associated with the event
+      await db.delete(
+        'Gifts', // Gifts table
+        where: 'event_id = ?', // SQL WHERE clause
+        whereArgs: [eventId], // Replace '?' with the event ID
+      );
+      print('Deleted gifts for event ID: $eventId');
+
+      // Delete the event itself
+      final result = await db.delete(
+        'Events', // Events table
+        where: 'id = ?', // SQL WHERE clause
+        whereArgs: [eventId], // Replace '?' with the event ID
+      );
+      print('Deleted $result event(s) with ID: $eventId');
+    } catch (e) {
+      print('Error deleting event by ID: $e');
+      throw Exception('Failed to delete event');
+    }
+  }
+
 
 // clear a user
   Future<void> clearUsers() async {

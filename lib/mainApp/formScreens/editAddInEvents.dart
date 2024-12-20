@@ -34,12 +34,17 @@ class _EditAddInEventsState extends State<EditAddInEvents> {
   @override
   void initState() {
     super.initState();
-    _loadEventData();
-    _fetchGifts();
+    if (widget.eventId==""){
+
+    }else{
+      _loadEventData();
+      _fetchGifts();
+    }
   }
 
   /// Load event data from Firestore using eventId
   Future<void> _loadEventData() async {
+
     try {
       final eventDoc = await FirebaseFirestore.instance
           .collection('events')
