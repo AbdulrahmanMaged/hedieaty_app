@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../services/database/notification/notification_helper.dart';
+
 class UserEventGiftList extends StatefulWidget {
   final String eventId; // The ID of the event whose gifts will be displayed
 
@@ -123,15 +125,50 @@ class _UserEventGiftListState extends State<UserEventGiftList> {
       // Get the current user's ID
       final currentUserID = FirebaseAuth.instance.currentUser?.uid;
 
-      await FirebaseFirestore.instance
+      if (currentUserID == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: User not authenticated!'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      final giftRef = FirebaseFirestore.instance
           .collection('events')
           .doc(widget.eventId) // Navigate to the event document
           .collection('gifts') // Access the gifts subcollection
-          .doc(giftId) // Locate the specific gift document
-          .update({
-        'status': 'Pledged', // Update the status to "Pledged"
-        'pledgedBy': currentUserID, // Add the current user ID to "pledgedBy"
-          }); // Update the status to "Pledged"
+          .doc(giftId);
+
+      // Update the gift document
+      await giftRef.update({
+        'status': 'Pledged',
+        'pledgedBy': currentUserID,
+      });
+
+      // Fetch the updated gift data
+      final giftSnapshot = await giftRef.get();
+      final giftData = giftSnapshot.data();
+
+      if (giftData == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: Gift data not found!'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      // Send notification to the gift owner
+      final giftOwnerId = giftRef.id;
+      await NotificationsHelper().sendNotifications(
+        topic: giftOwnerId.toString(),
+        title: 'A gift is pledged',
+        body: 'Your ${giftData['name'] ?? 'gift'} is pledged',
+        userId: currentUserID,
+      );
 
       // Show a green snackbar for successful status change
       ScaffoldMessenger.of(context).showSnackBar(
@@ -153,6 +190,7 @@ class _UserEventGiftListState extends State<UserEventGiftList> {
       );
     }
   }
+
 
 
   @override

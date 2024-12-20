@@ -115,6 +115,8 @@ class AuthService {
     );
 // Fetch the currently logged-in user's UID
       final userId = FirebaseAuth.instance.currentUser?.uid;
+      await FirebaseMessaging.instance.subscribeToTopic(userId!);
+      print('Successfully subscribed to topic: $userId');
 
       if (userId == null) {
         ScaffoldMessenger.of(context).showSnackBar(
