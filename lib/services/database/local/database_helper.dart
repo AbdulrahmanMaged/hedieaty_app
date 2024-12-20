@@ -86,27 +86,72 @@ class DatabaseHelper {
   }
 
   ///Updates personal info locally as draft
-  Future<void> updateUserDataLocally(String userId, Map<String, dynamic> userData) async {
+  Future<void> updateUserDataLocally(String userId, Map<String, dynamic> updatedFields) async {
     final db = await database;
 
     try {
-      // Update user data in the Users table
-      final result = await db.update(
-        'Users',
-        userData,
-        where: 'id = ?',
+      final int result = await db.update(
+        'Users', // Table name
+        updatedFields, // Map of fields to update
+        where: 'id = ?', // Condition to match the user
         whereArgs: [userId],
       );
 
       if (result > 0) {
-        print('User data updated successfully in local database.');
+        print('User with ID $userId updated successfully.');
       } else {
-        print('No user found with the given ID to update.');
+        print('No user found with ID $userId to update.');
       }
     } catch (e) {
-      print('Error updating user data locally: $e');
+      print('Error updating user with ID $userId: $e');
     }
   }
+
+  /// saves as a draft the event
+  Future<void> updateEventLocally(String eventId, Map<String, dynamic> eventData) async {
+    final db = await database;
+
+    try {
+      final result = await db.update(
+        'Events',
+        eventData,
+        where: 'id = ?',
+        whereArgs: [eventId],
+      );
+
+      if (result == 0) {
+        print('No event found with ID $eventId to update.');
+      } else {
+        print('Event with ID $eventId updated successfully.');
+      }
+    } catch (e) {
+      print('Error updating event with ID $eventId: $e');
+    }
+  }
+
+  /// saves as a draft the gifts
+  Future<void> updateGiftLocally(String giftId, Map<String, dynamic> giftData) async {
+    final db = await database;
+
+    try {
+      final result = await db.update(
+        'Gifts',
+        giftData,
+        where: 'id = ?',
+        whereArgs: [giftId],
+      );
+
+      if (result == 0) {
+        print('No gift found with ID $giftId to update.');
+      } else {
+        print('Gift with ID $giftId updated successfully.');
+      }
+    } catch (e) {
+      print('Error updating gift with ID $giftId: $e');
+    }
+  }
+
+
 
 
   Future<void> _onCreate(Database db, int version) async {
@@ -140,7 +185,8 @@ class DatabaseHelper {
         name TEXT NOT NULL,
         description TEXT,
         category TEXT,
-        priceRange TEXT,
+        priceFrom TEXT,
+        priceTo TEXT,
         status TEXT,
         event_id TEXT NOT NULL,
         FOREIGN KEY (event_id) REFERENCES Events (id)

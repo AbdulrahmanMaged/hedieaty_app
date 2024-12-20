@@ -23,6 +23,9 @@ class _ProfileWidgetState extends State<ProfileWidget> {
   List<Map<String, dynamic>> _events = [];
   // Get the current user's UID
   final uid = FirebaseAuth.instance.currentUser?.uid;
+  final TextEditingController firstNameController = TextEditingController();
+  final TextEditingController lastNameController = TextEditingController();
+  final TextEditingController preferencesController = TextEditingController();
 
   @override
   void initState() {
@@ -30,6 +33,15 @@ class _ProfileWidgetState extends State<ProfileWidget> {
     //_fetchUserDataFirestore();
     fetchUserDataLocal(uid!);
     fetchEvents();
+
+  }
+  @override
+  void dispose() {
+    // Dispose controllers to free resources
+    firstNameController.dispose();
+    lastNameController.dispose();
+    preferencesController.dispose();
+    super.dispose();
   }
 
   /// Fetches user data from Firestore
@@ -64,7 +76,7 @@ class _ProfileWidgetState extends State<ProfileWidget> {
 */
 
   ///Fetches data from local
-  void fetchUserDataLocal(String userId) async {
+  Future<void> fetchUserDataLocal(String userId) async {
     final userDataLocal = await DatabaseHelper.instance.fetchUserData(userId);
 
     if (userDataLocal != null) {
@@ -75,6 +87,11 @@ class _ProfileWidgetState extends State<ProfileWidget> {
       print('Last Name: ${userData?['lastName']}');
       print('Email: ${userData?['email']}');
       print('Preferences: ${userData?['preferences']}');*/
+      // Initialize controllers with existing user data
+      firstNameController.text = userData?['firstName'] ?? '';
+      lastNameController.text = userData?['lastName'] ?? '';
+      preferencesController.text = userData?['preferences'] ?? '';
+
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('user not-found')),
@@ -85,40 +102,66 @@ class _ProfileWidgetState extends State<ProfileWidget> {
 ///Updates data in local as draft
   void _updateUserLocally(String userId) async {
     final updatedUserData = {
-      'firstName': userData?['firstName'],
-      'lastName': userData?['lastName'],
+      'firstName': firstNameController.text,
+      'lastName': lastNameController.text,
       'email': userData?['email'],
-      'preferences': userData?['preferences']
+      'preferences': preferencesController.text,
     };
-print
-    await DatabaseHelper.instance.updateUserDataLocally(userId, updatedUserData);
+
+    try {
+      await DatabaseHelper.instance.updateUserDataLocally(userId, updatedUserData);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('User data updated successfully locally.')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error updating user data locally: $e')),
+      );
+    }
   }
 
 
   /// Updates user data in Firestore
   Future<void> _updateUserData() async {
-    if (userData == null) return;
-
     try {
-      // Get the current user's UID
+      // Ensure the current user is logged in
       if (uid == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('user not-found')),
+          SnackBar(content: Text('User not found')),
         );
         return;
       }
 
+      // Prepare updated data from controllers
+      final updatedUserData = {
+        'id': uid,
+        'firstName': firstNameController.text,
+        'lastName': lastNameController.text,
+        'email': userData?['email'], // Email is not editable here
+        'preferences': preferencesController.text,
+      };
+
       // Update user data in Firestore
-      await _firestore.collection('users').doc(uid).update(userData!);
+      await _firestore.collection('users').doc(uid).update(updatedUserData);
+
+      // Show success feedback
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Profile updated successfully')),
       );
+
+      // Update local `userData` map
+        await DatabaseHelper.instance.updateUserDataLocally(uid!, updatedUserData);
+
+
     } catch (e) {
+      // Handle errors
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error updating profile data: $e')),
       );
     }
   }
+
 
   void _logOut() {
     Navigator.pushReplacement(
@@ -269,7 +312,7 @@ print
                               SizedBox(height: 10),
                               // Personal Information Fields
                               TextFormField(
-                                initialValue: userData!['firstName'],
+                                controller: firstNameController,
                                 readOnly: !isEditing,
                                 decoration: InputDecoration(
                                   labelText: 'First Name',
@@ -289,13 +332,11 @@ print
                                     borderRadius: BorderRadius.circular(10),
                                   ),
                                 ),
-                                onChanged: (value) {
-                                  userData!['firstName'] = value;
-                                },
+
                               ),
                               SizedBox(height: 10),
                               TextFormField(
-                                initialValue: userData!['lastName'],
+                                controller: lastNameController,
                                 readOnly: !isEditing,
                                 decoration: InputDecoration(
                                   labelText: 'Last Name',
@@ -315,13 +356,11 @@ print
                                     borderRadius: BorderRadius.circular(10),
                                   ),
                                 ),
-                                onChanged: (value) {
-                                  userData!['lastName'] = value;
-                                },
+
                               ),
                               SizedBox(height: 10),
                               TextFormField(
-                                initialValue: userData!['preferences'],
+                                controller: preferencesController,
                                 readOnly: !isEditing,
                                 decoration: InputDecoration(
                                   labelText: 'Preferences',
@@ -344,9 +383,7 @@ print
                                   ),
                                 ),
                                 maxLines: 3,
-                                onChanged: (value) {
-                                  userData!['preferences'] = value;
-                                },
+
                               ),
                               SizedBox(height: 20),
                               Row(

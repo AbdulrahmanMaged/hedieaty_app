@@ -230,6 +230,7 @@ class _EditAddInEventsState extends State<EditAddInEvents> {
   }
 
 
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -333,20 +334,6 @@ class _EditAddInEventsState extends State<EditAddInEvents> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              ElevatedButton(
-                onPressed: _gifts.isNotEmpty ? null : () {},
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _gifts.isNotEmpty ? Colors.green : Colors.grey,
-                ),
-                child: Text(
-                  'Save as Draft',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: _gifts.isNotEmpty ? Colors.black : Colors.white,
-                  ),
-                ),
-              ),
               // Post Event Button
               ElevatedButton(
                 onPressed: _gifts.isNotEmpty ? _addEvent : null, // Adjust function call as needed
