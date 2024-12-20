@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:hedieaty_app/mainApp/screens/user_event_giftList.dart';
 import 'package:intl/intl.dart';
 
 import '../formScreens//AddEventScreen.dart';
@@ -18,22 +19,13 @@ class _EventsScreenState extends State<EventsScreen> {
   List<Map<String, dynamic>> _events = [];
   bool _isLoading = false;
   String _sortBy = 'Name'; // Default sorting option
-
-
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  Map<String, String> _eventMakerNames = {};
   @override
   void initState() {
     fetchEvents();
   }
 
-  // Navigate to AddEventScreen and pass _fetchEvents callback
-  void _navigateToAddEventScreen() async {
-    await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => AddEventScreen(onEventAdded: fetchEvents), // Passing the callback
-      ),
-    );
-  }
 
   /// Fetch Events from Firestore
   Future<void> fetchEvents() async {
@@ -95,47 +87,6 @@ class _EventsScreenState extends State<EventsScreen> {
   }
 
 
-  /// Show the event details for editing
-  void _editEvent(String eventId) {
-    // Navigate to an edit screen or show a dialog
-  }
-
-  /// Delete an event
-  Future<void> _deleteEvent(String eventId) async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Delete Event'),
-        content: Text('Are you sure you want to delete this event?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text('Delete'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirm == true) {
-      try {
-        await FirebaseFirestore.instance.collection('events').doc(eventId).delete();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Event deleted successfully!')),
-        );
-        fetchEvents(); // Refresh the list
-      } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error deleting event: $e')),
-        );
-      }
-    }
-  }
-
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -171,61 +122,70 @@ class _EventsScreenState extends State<EventsScreen> {
       ),
       body: _isLoading
           ? Center(child: CircularProgressIndicator())
-      : _events.isEmpty
-      ? Center(child: Text('No events found'))
+          : _events.isEmpty
+          ? Center(child: Text('No events found'))
           : ListView.builder(
         itemCount: _events.length,
         itemBuilder: (context, index) {
           final event = _events[index];
-          return  Card(
-              margin: EdgeInsets.symmetric(vertical: 10.0, horizontal: 15.0),
-              shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10.0),
-          ),
-            elevation: 8.0, // Box shadow effect
-            color: Colors.grey[200], // Background color
-            shadowColor: Colors.purple.withOpacity(0.8), // Shadow color with opacity
-            child:ListTile(
-              contentPadding: EdgeInsets.all(10),
-              isThreeLine: true,
-              title: Text(event['name'], style: TextStyle(fontSize: 18)),
-              subtitle: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Status: ${event['status']}'),
-                  SizedBox(height: 2),  // Add spacing between the status and date
-                  Text(
-                    'Date: ${event['date'] != null ? DateFormat('dd-MMM-yyyy').format(event['date'].toDate()) : 'N/A'}',
+          final eventMakerId = event['id'];
+
+          return FutureBuilder<DocumentSnapshot>(
+            future: _firestore.collection('users').doc(eventMakerId).get(),
+            builder: (context, snapshot) {
+              String eventMakerName = 'Unknown';
+              if (snapshot.connectionState == ConnectionState.done) {
+                final data = snapshot.data?.data() as Map<String, dynamic>?;
+                eventMakerName = data?['firstName'] ?? 'Unknown';
+              }
+
+              return Card(
+                margin: EdgeInsets.symmetric(vertical: 10.0, horizontal: 15.0),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10.0),
+                ),
+                elevation: 8.0,
+                color: Colors.grey[200],
+                shadowColor: Colors.purple.withOpacity(0.8),
+                child: ListTile(
+                  contentPadding: EdgeInsets.all(10),
+                  title: Text(event['name'], style: TextStyle(fontSize: 18)),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Status: ${event['status']}'),
+                      SizedBox(height: 2),
+                      Text(
+                        'Date: ${event['date'] != null ? DateFormat('dd-MMM-yyyy').format(event['date'].toDate()) : 'N/A'}',
+                      ),
+                      SizedBox(height: 2),
+                      Text('Event By: $eventMakerName'),
+                    ],
                   ),
-                ],
-              ),
-              trailing: PopupMenuButton<String>(
-                onSelected: (value) {
-                  if (value == 'Edit') {
-                    _editEvent(event['id']);
-                  } else if (value == 'Delete') {
-                    _deleteEvent(event['id']);
-                  }
-                },
-                itemBuilder: (context) => [
-                  PopupMenuItem(
-                    value: 'Edit',
-                    child: Text('Edit'),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'View gift list',
+                        style: TextStyle(fontSize: 14, color: Colors.purple),
+                      ),
+                      SizedBox(width: 4),
+                      Icon(Icons.arrow_forward_ios, size: 16, color: Colors.purple),
+                    ],
                   ),
-                  PopupMenuItem(
-                    value: 'Delete',
-                    child: Text('Delete'),
-                  ),
-                ],
-              ),
-            ),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => UserEventGiftList(eventId: event['id']),
+                      ),
+                    );
+                  },
+                ),
+              );
+            },
           );
         },
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _navigateToAddEventScreen,
-        child: Icon(Icons.add),
-        tooltip: 'Add Event',
       ),
     );
   }

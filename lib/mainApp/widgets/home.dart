@@ -28,12 +28,21 @@ class _HomeState extends State<Home> {
   final eventsScreen = EventsScreen(onEventAdded: () {});
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   List<Map<String, dynamic>> _friends = [];
+  List<Map<String, dynamic>> _filteredFriends = []; // Filtered list for search
+  final TextEditingController _searchController = TextEditingController(); // Controller for search input
   final currentUserId = FirebaseAuth.instance.currentUser?.uid;
 
   @override
   void initState() {
     super.initState();
     _fetchFriends();
+    //_searchController.addListener(_filterFriends); // Add listener for search
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose(); // Dispose controller
+    super.dispose();
   }
 
   /// Fetch Friends Data
@@ -63,13 +72,14 @@ class _HomeState extends State<Home> {
         final eventsSnapshot = await _firestore
             .collection('events')
             .where('userId', isEqualTo: friend['id'])
-            .where('status', whereIn: ["Upcoming","Current"])
+            .where('status', whereIn: ["Upcoming", "Current"])
             .get();
         friend['upcomingEventsCount'] = eventsSnapshot.size;
       }
 
       setState(() {
         _friends = friendsData;
+        _filteredFriends = friendsData; // Initially show all friends
       });
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -78,66 +88,120 @@ class _HomeState extends State<Home> {
     }
   }
 
+  /// Filter friends based on search query
+  void _filterFriends() {
+    final query = _searchController.text.toLowerCase();
+    if (query.isEmpty) {
+      setState(() {
+        _filteredFriends = _friends; // Show all friends if search is empty
+      });
+      return;
+    }
+
+    setState(() {
+      _filteredFriends = _friends.where((friend) {
+        final firstName = friend['firstName'].toLowerCase();
+        final lastName = friend['lastName'].toLowerCase();
+        return firstName.contains(query) || lastName.contains(query);
+      }).toList();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: TopHomeBar(onMenuSelected: _onMenuSelected),
-      body: _friends.isEmpty
-          ? Center(child: Text("You don't have friends yet ☹️"))
-          : ListView.builder(
-        itemCount: _friends.length,
-        itemBuilder: (context, index) {
-          final friend = _friends[index];
-          return Card(
-            margin: EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-            elevation: 5,
-            child: ListTile(
-              ///Profile picture here
-              title: Text(
-                '${friend['firstName']} ${friend['lastName']}',
-                style: GoogleFonts.roboto(fontSize: 18),
-              ),
-              subtitle: Text(
-                friend['upcomingEventsCount'] > 0
-                    ? "Upcoming Events: ${friend['upcomingEventsCount']}"
-                    : "No Upcoming Events",
-                style: TextStyle(color: Colors.grey[700]),
-              ),
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min, // Ensures the Row takes only the necessary space
-                children: [
-                  Text(
-                    'View events',
-                    style: TextStyle(fontSize: 14, color: Colors.purple),
+      body: Column(
+        children: [
+          // Search Field
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _searchController,
+                    decoration: InputDecoration(
+                      hintText: 'Search by name',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
                   ),
-                  SizedBox(width: 4), // Add spacing between the label and icon
-                  Icon(Icons.arrow_forward_ios, size: 16, color: Colors.purple),
-                ],
-              ),
-              onTap: () {
-                // Navigate to user_event_screen
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => UserEventScreen(userId: friend['id']),
+                ),
+                SizedBox(width: 8),
+                IconButton(
+                  icon: Icon(Icons.search, color: Colors.purple),
+                  onPressed: _filterFriends, // Trigger search on icon press
+                ),
+              ],
+            ),
+          ),
+          // Friends List
+          Expanded(
+            child: _filteredFriends.isEmpty
+                ? Center(child: Text("No friends found ☹️"))
+                : ListView.builder(
+              itemCount: _filteredFriends.length,
+              itemBuilder: (context, index) {
+                final friend = _filteredFriends[index];
+                return Card(
+                  margin:
+                  EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  elevation: 5,
+                  child: ListTile(
+                    title: Text(
+                      '${friend['firstName']} ${friend['lastName']}',
+                      style: GoogleFonts.roboto(fontSize: 18),
+                    ),
+                    subtitle: Text(
+                      friend['upcomingEventsCount'] > 0
+                          ? "Upcoming Events: ${friend['upcomingEventsCount']}"
+                          : "No Upcoming Events",
+                      style: TextStyle(color: Colors.grey[700]),
+                    ),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize
+                          .min, // Ensures the Row takes only the necessary space
+                      children: [
+                        Text(
+                          'View events',
+                          style: TextStyle(
+                              fontSize: 14, color: Colors.purple),
+                        ),
+                        SizedBox(
+                            width:
+                            4), // Add spacing between the label and icon
+                        Icon(Icons.arrow_forward_ios,
+                            size: 16, color: Colors.purple),
+                      ],
+                    ),
+                    onTap: () {
+                      // Navigate to user_event_screen
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              UserEventScreen(userId: friend['id']),
+                        ),
+                      );
+                    },
                   ),
                 );
               },
             ),
-          );
-        },
+          ),
+        ],
       ),
-
       bottomNavigationBar: BottomNavBar(
         currentIndex: _currentIndex,
         onTap: _onNavBarTapped,
       ),
     );
   }
-
   // Handle navigation from the bottom nav bar
   void _onNavBarTapped(int index) {
     setState(() {
@@ -315,7 +379,6 @@ class _HomeState extends State<Home> {
   void debugDeleteTable(String tableName) async {
     await DatabaseHelper.instance.deleteTable(tableName);
   }
-
 
 
 }

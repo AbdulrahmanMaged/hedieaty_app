@@ -16,7 +16,6 @@ class ProfileWidget extends StatefulWidget {
 
 class _ProfileWidgetState extends State<ProfileWidget> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final FirebaseAuth _auth = FirebaseAuth.instance;
   Map<String, dynamic>? userData;
   bool isEditing = false; // Tracks editing state
   bool isExpanded = false; // Tracks expanded state for the section
@@ -126,6 +125,8 @@ class _ProfileWidgetState extends State<ProfileWidget> {
       });
     }
   }
+
+  ///Delete event
   Future<void> _deleteEvent(String eventId) async {
     try {
       await FirebaseFirestore.instance
@@ -415,6 +416,10 @@ class _ProfileWidgetState extends State<ProfileWidget> {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
           // Navigate to MyPledgedScreen
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => MyPledgedGifts()), //
+          );
         },
         backgroundColor: Colors.purple[600],
         icon: Icon(Icons.card_giftcard, color: Colors.white),
