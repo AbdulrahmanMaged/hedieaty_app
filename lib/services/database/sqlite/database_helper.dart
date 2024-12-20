@@ -185,8 +185,7 @@ class DatabaseHelper {
         name TEXT NOT NULL,
         description TEXT,
         category TEXT,
-        priceFrom TEXT,
-        priceTo TEXT,
+        priceRange TEXT,
         status TEXT,
         event_id TEXT NOT NULL,
         FOREIGN KEY (event_id) REFERENCES Events (id)
@@ -270,6 +269,33 @@ Future<List<Map<String, dynamic>>> getUsers() async {
     await db.delete('users');
   }
 
+  Future<void> printTableColumns(String tableName) async {
+    final db = await database;
+
+    try {
+      // Query the table schema
+      final List<Map<String, dynamic>> result =
+      await db.rawQuery("PRAGMA table_info($tableName)");
+
+      // Print the columns
+      print('Table: $tableName');
+      for (var row in result) {
+        print('Column: ${row['name']}, Type: ${row['type']}, NotNull: ${row['notnull']}, DefaultValue: ${row['dflt_value']}');
+      }
+    } catch (e) {
+      print('Error retrieving columns for table $tableName: $e');
+    }
+  }
+
+  Future<void> deleteDatabaseFile() async {
+    try {
+      final dbPath = join(await getDatabasesPath(), 'hedieaty_app.db');
+      await deleteDatabase(dbPath); // Deletes the database file
+      print('Database deleted successfully.');
+    } catch (e) {
+      print('Error deleting database: $e');
+    }
+  }
 
 
 

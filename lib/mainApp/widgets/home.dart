@@ -9,7 +9,7 @@ import 'package:hedieaty_app/mainApp/screens/my_profile.dart';
 import 'package:hedieaty_app/mainApp/widgets/bottom_nav_bar.dart';
 import 'package:hedieaty_app/mainApp/widgets/top_home_bar.dart';
 import 'package:intl/intl.dart';
-
+import 'package:firebase_messaging/firebase_messaging.dart';
 import '../formScreens/editAddInEvents.dart';
 import '../screens/all_events_screen.dart';
 import '../formScreens//addEventScreen.dart';
@@ -36,7 +36,18 @@ class _HomeState extends State<Home> {
   void initState() {
     super.initState();
     _fetchFriends();
-    //_searchController.addListener(_filterFriends); // Add listener for search
+    requestNotificationPermission();
+    // Listen to messages when the app is in the foreground
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      print('Message received: ${message.notification?.title}');
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text(message.notification?.title ?? "No Title"),
+          content: Text(message.notification?.body ?? "No Body"),
+        ),
+      );
+    });
   }
 
   @override
@@ -44,6 +55,34 @@ class _HomeState extends State<Home> {
     _searchController.dispose(); // Dispose controller
     super.dispose();
   }
+
+
+  Future<void> requestNotificationPermission() async {
+    NotificationSettings settings = await FirebaseMessaging.instance.requestPermission(
+      alert: true,
+      announcement: false,
+      badge: true,
+      carPlay: false,
+      criticalAlert: false,
+      provisional: false,
+      sound: true,
+    );
+
+    if (settings.authorizationStatus == AuthorizationStatus.authorized) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('user permission granted')),
+      );
+    } else if (settings.authorizationStatus == AuthorizationStatus.provisional) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('user permission granted once')),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('user permission not granted')),
+      );
+    }
+  }
+
 
   /// Fetch Friends Data
   Future<void> _fetchFriends() async {
@@ -225,9 +264,12 @@ class _HomeState extends State<Home> {
           context, MaterialPageRoute(builder: (context) =>  MyProfile()));
     } else if (index == 5) {
       debugDatabase();
+     //debugprintTable('Gifts');
     }
     else if (index == 6) {
-      debugDeleteTable('Events');
+      debugDeleteTable('Gifts');
+      //debugprintTable('Gifts');
+      //debugDeleteAll();
     }
   }
   void _showEventPicker(BuildContext context) async {
@@ -380,5 +422,14 @@ class _HomeState extends State<Home> {
     await DatabaseHelper.instance.deleteTable(tableName);
   }
 
+  //deletes the database
+  void debugDeleteAll() async {
+    await DatabaseHelper.instance.deleteDatabaseFile();
+  }
+
+
+  void debugprintTable(String tableName) async {
+    await DatabaseHelper.instance.printTableColumns(tableName);
+  }
 
 }

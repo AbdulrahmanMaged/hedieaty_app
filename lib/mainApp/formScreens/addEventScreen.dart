@@ -28,8 +28,8 @@ class _AddEventScreenState extends State<AddEventScreen> {
   TextEditingController _giftPriceToController = TextEditingController();
   String _giftCategory = 'Electronic'; // Default category
   String _giftStatus = 'Available'; // Default status
+  final currentUserID = FirebaseAuth.instance.currentUser?.uid;
 
-  bool _isLoading = false;
 
   // Show DatePicker for selecting event date
   Future<void> _selectDate(BuildContext context) async {
@@ -86,11 +86,9 @@ class _AddEventScreenState extends State<AddEventScreen> {
     }
 
     setState(() {
-      _isLoading = true;
     });
 
     try {
-      final currentUserID = FirebaseAuth.instance.currentUser?.uid;
       // Get the current date (without time) to compare with event date
       final DateNotFinal = DateTime.now();
       final CurrentDate = DateTime(DateNotFinal.year, DateNotFinal.month, DateNotFinal.day); // Set time to 00:00:00.000
@@ -117,9 +115,11 @@ class _AddEventScreenState extends State<AddEventScreen> {
       // Retrieve the event ID
       final eventId = eventRef.id;
 
-      // Save gifts as a subcollection
+      List<String> giftIds = []; // List to store gift IDs
+
+// Save gifts as a subcollection
       for (var gift in _gifts) {
-        await eventRef.collection('gifts').add({
+        final giftRef = await eventRef.collection('gifts').add({
           'name': gift['name'],
           'description': gift['description'],
           'category': gift['category'],
@@ -127,10 +127,13 @@ class _AddEventScreenState extends State<AddEventScreen> {
           'priceRange': gift['priceRange'],
           'eventId': eventRef.id,
         });
+        // Add the gift ID to the list
+        giftIds.add(giftRef.id);
       }
 
+
       ///Saving locally
-      saveEventAndGiftsLocally(eventId,currentUserID!, eventStatus);
+      saveEventAndGiftsLocally(eventId,currentUserID!, eventStatus,giftIds);
 
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -147,12 +150,12 @@ class _AddEventScreenState extends State<AddEventScreen> {
       );
     }finally {
       setState(() {
-        _isLoading = false;
       });
     }
   }
 
-  Future<void> saveEventAndGiftsLocally(String eventId,String currentUserID, String eventStatus) async {
+
+  Future<void> saveEventAndGiftsLocally(String eventId,String currentUserID, String eventStatus,List<String> giftIds ) async {
     try {
       // Save event to the Events table
       await DatabaseHelper.instance.insertEvent({
@@ -166,27 +169,30 @@ class _AddEventScreenState extends State<AddEventScreen> {
       });
 
       // Save gifts associated with the event to the Gifts table
-      for (var gift in _gifts) {
+      for (int i = 0; i < _gifts.length; i++) {
+        final gift = _gifts[i];
+        final giftId = giftIds[i]; // Get the corresponding gift ID
+
         await DatabaseHelper.instance.insertGift({
-          'id': gift['id'],
+          'id': giftId, // Assign the correct gift ID
           'name': gift['name'],
           'description': gift['description'],
           'category': gift['category'],
+          'priceRange': gift['priceRange'],
           'status': gift['status'],
-          'priceFrom': _giftPriceFromController,
-          'priceTo': _giftPriceToController,
           'event_id': eventId, // Foreign key for the event
         });
       }
 
+
       // Show success message
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Event and gifts saved locally.')),
+        SnackBar(content: Text('Event and gifts saved')),
       );
     } catch (e) {
       // Handle errors
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error saving event and gifts locally: $e')),
+        SnackBar(content: Text('Error saving event and gifts: $e')),
       );
     }
   }
@@ -481,9 +487,10 @@ class _AddEventScreenState extends State<AddEventScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       ElevatedButton(
-                        onPressed: _gifts.isNotEmpty ? null : () {},
+                        onPressed: _gifts.isNotEmpty ? () =>saveEventAndGiftsLocally("",currentUserID!,"Draft",[]) : null,
+
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: _gifts.isNotEmpty ? Colors.green : Colors.grey,                        ), // No implementation for now
+                          backgroundColor: _gifts.isNotEmpty ? Colors.green : Colors.grey,),
                         child: Text('Save as Draft',
                         style: TextStyle(fontSize: 16,
                           fontWeight: FontWeight.bold,color: _gifts.isNotEmpty ? Colors.black : Colors.white,),),

@@ -1,8 +1,10 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import '../sqlite//database_helper.dart';
 import '../../../mainApp/screens/home_screen.dart';
+
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -10,6 +12,19 @@ class AuthService {
   final DatabaseHelper _dbHelper = DatabaseHelper.instance;
   Map<String, dynamic>? userData;
 
+
+  Future<void> saveFCMToken(String userId) async {
+    String? token = await FirebaseMessaging.instance.getToken();
+
+    if (token != null) {
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .update({
+        'fcmToken': token
+          });
+    }
+  }
 
   // Sign-Up Method
   Future<void> signUp({
@@ -50,6 +65,10 @@ class AuthService {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Account Created Successfully!')),
       );
+
+      FirebaseMessaging.instance.onTokenRefresh.listen((newToken) {
+        saveFCMToken(userCredential.user!.uid); // Update Firestore with the new token
+      });
 
       // Navigate to HomePage
       Navigator.pushReplacement(
@@ -115,7 +134,9 @@ class AuthService {
         final lastName = userData?['lastName'] ?? '';
         final email = userData?['email'] ?? '';
         final preferences = userData?['preferences'] ?? '';
-
+        FirebaseMessaging.instance.onTokenRefresh.listen((newToken) {
+          saveFCMToken(userId); // Update Firestore with the new token
+        });
         // Save user information in SQLite
         await _dbHelper.insertUser({
           'id': userId,
