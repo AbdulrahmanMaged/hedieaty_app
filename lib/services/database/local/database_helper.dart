@@ -66,6 +66,48 @@ class DatabaseHelper {
     }
   }
 
+  ///Fetches current user for profile screen
+  Future<Map<String, dynamic>?> fetchUserData(String userId) async {
+    final db = await database;
+
+    // Query the Users table to get the current user
+    final List<Map<String, dynamic>> result = await db.query(
+      'Users',
+      where: 'id = ?',
+      whereArgs: [userId],
+    );
+
+    // Return the user data if found, otherwise null
+    if (result.isNotEmpty) {
+      return result.first; // Return the first (and only) result
+    } else {
+      return null; // No user found with the given ID
+    }
+  }
+
+  ///Updates personal info locally as draft
+  Future<void> updateUserDataLocally(String userId, Map<String, dynamic> userData) async {
+    final db = await database;
+
+    try {
+      // Update user data in the Users table
+      final result = await db.update(
+        'Users',
+        userData,
+        where: 'id = ?',
+        whereArgs: [userId],
+      );
+
+      if (result > 0) {
+        print('User data updated successfully in local database.');
+      } else {
+        print('No user found with the given ID to update.');
+      }
+    } catch (e) {
+      print('Error updating user data locally: $e');
+    }
+  }
+
 
   Future<void> _onCreate(Database db, int version) async {
     await db.execute('''
@@ -81,33 +123,34 @@ class DatabaseHelper {
 
     await db.execute('''
       CREATE TABLE Events (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
         date TEXT NOT NULL,
         description TEXT,
-        user_id INTEGER NOT NULL,
+        location TEXT,
+        status TEXT,
+        user_id TEXT NOT NULL,
         FOREIGN KEY (user_id) REFERENCES Users (id)
       );
     ''');
 
     await db.execute('''
       CREATE TABLE Gifts (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
         description TEXT,
         category TEXT,
-        price REAL,
+        priceRange TEXT,
         status TEXT,
-        event_id INTEGER NOT NULL,
+        event_id TEXT NOT NULL,
         FOREIGN KEY (event_id) REFERENCES Events (id)
       );
     ''');
 
     await db.execute('''
       CREATE TABLE Friends (
-        user_id INTEGER NOT NULL,
+        user_id TEXT PRIMARY KEY,
         friend_id INTEGER NOT NULL,
-        PRIMARY KEY (user_id, friend_id),
         FOREIGN KEY (user_id) REFERENCES Users (id),
         FOREIGN KEY (friend_id) REFERENCES Users (id)
       );

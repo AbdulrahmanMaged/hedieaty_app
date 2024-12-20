@@ -27,12 +27,14 @@ class _ProfileWidgetState extends State<ProfileWidget> {
   @override
   void initState() {
     super.initState();
-    _fetchUserData();
+    //_fetchUserDataFirestore();
+    fetchUserDataLocal(uid!);
     fetchEvents();
   }
 
   /// Fetches user data from Firestore
-  Future<void> _fetchUserData() async {
+/*
+  Future<void> _fetchUserDataFirestore() async {
     try {
       // Get the current user's UID
       if (uid == null) {
@@ -59,6 +61,39 @@ class _ProfileWidgetState extends State<ProfileWidget> {
       );
     }
   }
+*/
+
+  ///Fetches data from local
+  void fetchUserDataLocal(String userId) async {
+    final userDataLocal = await DatabaseHelper.instance.fetchUserData(userId);
+
+    if (userDataLocal != null) {
+      userData = userDataLocal;
+      /*print('User Data:');
+      print('ID: ${userData?['id']}');
+      print('First Name: ${userData?['firstName']}');
+      print('Last Name: ${userData?['lastName']}');
+      print('Email: ${userData?['email']}');
+      print('Preferences: ${userData?['preferences']}');*/
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('user not-found')),
+      );
+    }
+  }
+
+///Updates data in local as draft
+  void _updateUserLocally(String userId) async {
+    final updatedUserData = {
+      'firstName': userData?['firstName'],
+      'lastName': userData?['lastName'],
+      'email': userData?['email'],
+      'preferences': userData?['preferences']
+    };
+print
+    await DatabaseHelper.instance.updateUserDataLocally(userId, updatedUserData);
+  }
+
 
   /// Updates user data in Firestore
   Future<void> _updateUserData() async {
@@ -314,33 +349,51 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                                 },
                               ),
                               SizedBox(height: 20),
-                              ElevatedButton(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.purple[600],
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius:
-                                    BorderRadius.circular(8),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween, // Space between buttons
+                                children: [
+                                  // Existing button
+                                  ElevatedButton(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.purple[600],
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                    ),
+                                    onPressed: () {
+                                      if (isEditing) {
+                                        // Save changes in Firestore
+                                        _updateUserData();
+                                      }
+                                      setState(() {
+                                        isEditing = !isEditing; // Toggle editing state
+                                      });
+                                    },
+                                    child: Text(
+                                      isEditing ? 'Save Changes' : 'Edit',
+                                      style: TextStyle(fontSize: 16, color: Colors.white),
+                                    ),
                                   ),
-                                ),
-                                onPressed: () {
-                                  if (isEditing) {
-                                    // Save changes in Firestore
-                                    _updateUserData();
-                                  }
-                                  setState(() {
-                                    isEditing =
-                                    !isEditing; // Toggle editing state
-                                  });
-                                },
-                                child: Text(
-                                  isEditing
-                                      ? 'Save Changes'
-                                      : 'Edit',
-                                  style: TextStyle(
-                                      fontSize: 16,
-                                      color: Colors.white),
-                                ),
+                                  // Save on local DB
+                                  ElevatedButton(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.purple[400], // Example color for draft button
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                    ),
+                                    onPressed: () {
+                                      // Implement draft save logic here
+                                      _updateUserLocally(userData?['id']);
+                                    },
+                                    child: Text(
+                                      'Save as Draft',
+                                      style: TextStyle(fontSize: 16, color: Colors.white),
+                                    ),
+                                  ),
+                                ],
                               ),
+
                             ],
                           ),
                       ],

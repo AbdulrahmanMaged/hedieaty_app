@@ -8,7 +8,7 @@ class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final DatabaseHelper _dbHelper = DatabaseHelper.instance;
-
+  Map<String, dynamic>? userData;
 
 
   // Sign-Up Method
@@ -94,6 +94,46 @@ class AuthService {
     email: email,
     password: password,
     );
+// Fetch the currently logged-in user's UID
+      final userId = FirebaseAuth.instance.currentUser?.uid;
+
+      if (userId == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('User not logged in.')),
+        );
+        return;
+      }
+
+// Fetch user data from Firestore
+      final userDoc = await FirebaseFirestore.instance.collection('users').doc(userId).get();
+
+      if (userDoc.exists) {
+        final userData = userDoc.data();
+
+        // Ensure Firestore document contains all required fields
+        final firstName = userData?['firstName'] ?? '';
+        final lastName = userData?['lastName'] ?? '';
+        final email = userData?['email'] ?? '';
+        final preferences = userData?['preferences'] ?? '';
+
+        // Save user information in SQLite
+        await _dbHelper.insertUser({
+          'id': userId,
+          'firstName': firstName,
+          'lastName': lastName,
+          'email': email,
+          'preferences': preferences,
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('User data successfully synced to local database.')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('User data not found in Firestore.')),
+        );
+      }
+
 
     // Navigate to HomePage
     Navigator.pushReplacement(
