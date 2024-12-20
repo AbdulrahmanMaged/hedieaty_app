@@ -123,6 +123,7 @@ class DatabaseHelper {
         print('No event found with ID $eventId to update.');
       } else {
         print('Event with ID $eventId updated successfully.');
+        print("Event data $eventData");
       }
     } catch (e) {
       print('Error updating event with ID $eventId: $e');

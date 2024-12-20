@@ -155,7 +155,7 @@ class _AddEventScreenState extends State<AddEventScreen> {
   }
 
 
-  Future<void> saveEventAndGiftsLocally(String eventId,String currentUserID, String eventStatus,List<String> giftIds ) async {
+  Future<void> saveEventAndGiftsLocally(String eventId, String currentUserID, String eventStatus, List<String> giftIds) async {
     try {
       // Save event to the Events table
       await DatabaseHelper.instance.insertEvent({
@@ -168,10 +168,17 @@ class _AddEventScreenState extends State<AddEventScreen> {
         'user_id': currentUserID, // Foreign key for the user
       });
 
+      print('The gift length: ${_gifts.length}');
+
+      // Ensure giftIds matches the length of _gifts
+      if (giftIds.isEmpty) {
+        giftIds = List.generate(_gifts.length, (_) => "");
+      }
+
       // Save gifts associated with the event to the Gifts table
       for (int i = 0; i < _gifts.length; i++) {
         final gift = _gifts[i];
-        final giftId = giftIds[i]; // Get the corresponding gift ID
+        final giftId = i < giftIds.length ? giftIds[i] : ""; // Validate giftIds length
 
         await DatabaseHelper.instance.insertGift({
           'id': giftId, // Assign the correct gift ID
@@ -183,7 +190,6 @@ class _AddEventScreenState extends State<AddEventScreen> {
           'event_id': eventId, // Foreign key for the event
         });
       }
-
 
       // Show success message
       ScaffoldMessenger.of(context).showSnackBar(

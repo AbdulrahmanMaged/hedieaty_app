@@ -267,7 +267,7 @@ class _HomeState extends State<Home> {
      //debugprintTable('Gifts');
     }
     else if (index == 6) {
-      debugDeleteTable('Gifts');
+      debugDeleteTable('Events');
       //debugprintTable('Gifts');
       //debugDeleteAll();
     }
