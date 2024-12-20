@@ -170,10 +170,10 @@ class DatabaseHelper {
       CREATE TABLE Events (
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
+        status TEXT NOT NULL,
         date TEXT NOT NULL,
         description TEXT,
         location TEXT,
-        status TEXT,
         user_id TEXT NOT NULL,
         FOREIGN KEY (user_id) REFERENCES Users (id)
       );
@@ -231,44 +231,47 @@ Future<List<Map<String, dynamic>>> getUsers() async {
 
 
 // Insert an event
-Future<int> insertEvent(Map<String, dynamic> event) async {
-  final db = await database;
-  return db.insert('Events', event);
-}
+  Future<void> insertEvent(Map<String, dynamic> eventData) async {
+    final db = await database;
+
+    try {
+      await db.insert(
+        'Events',
+        eventData,
+        conflictAlgorithm: ConflictAlgorithm.replace, // Overwrite if event already exists
+      );
+      print('Event inserted with ID: ${eventData['id']}');
+    } catch (e) {
+      print('Error inserting event: $e');
+      throw Exception('Failed to insert event');
+    }
+  }
+
+  Future<void> insertGift(Map<String, dynamic> giftData) async {
+    final db = await database;
+
+    try {
+      await db.insert(
+        'Gifts',
+        giftData,
+        conflictAlgorithm: ConflictAlgorithm.replace, // Overwrite if gift already exists
+      );
+      print('Gift inserted with ID: ${giftData['id']}');
+    } catch (e) {
+      print('Error inserting gift: $e');
+      throw Exception('Failed to insert gift');
+    }
+  }
+
+
 // clear a user
   Future<void> clearUsers() async {
     final db = await database;
     await db.delete('users');
   }
 
-// Get events by user ID
-Future<List<Map<String, dynamic>>> getEventsByUserId(int userId) async {
-  final db = await database;
-  return db.query('Events', where: 'user_id = ?', whereArgs: [userId]);
-}
 
-// Insert a gift
-Future<int> insertGift(Map<String, dynamic> gift) async {
-  final db = await database;
-  return db.insert('Gifts', gift);
-}
 
-// Get gifts by event ID
-Future<List<Map<String, dynamic>>> getGiftsByEventId(int eventId) async {
-  final db = await database;
-  return db.query('Gifts', where: 'event_id = ?', whereArgs: [eventId]);
-}
 
-// Add a friend
-Future<int> addFriend(int userId, int friendId) async {
-  final db = await database;
-  return db.insert('Friends', {'user_id': userId, 'friend_id': friendId});
-}
-
-// Get friends for a user
-Future<List<Map<String, dynamic>>> getFriends(int userId) async {
-  final db = await database;
-  return db.query('Friends', where: 'user_id = ?', whereArgs: [userId]);
-}
 
 }

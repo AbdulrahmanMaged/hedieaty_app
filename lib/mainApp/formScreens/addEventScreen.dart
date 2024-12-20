@@ -3,7 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
-
+import 'package:hedieaty_app/services/database/sqlite/database_helper.dart';
 class AddEventScreen extends StatefulWidget {
   final Function onEventAdded; // Callback function
   AddEventScreen({required this.onEventAdded}); // Constructor to accept the callback
@@ -114,6 +114,8 @@ class _AddEventScreenState extends State<AddEventScreen> {
         'description': _descriptionController.text,
         'userId': currentUserID,
       });
+      // Retrieve the event ID
+      final eventId = eventRef.id;
 
       // Save gifts as a subcollection
       for (var gift in _gifts) {
@@ -126,6 +128,10 @@ class _AddEventScreenState extends State<AddEventScreen> {
           'eventId': eventRef.id,
         });
       }
+
+      ///Saving locally
+      saveEventAndGiftsLocally(eventId,currentUserID!, eventStatus);
+
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Event added successfully!',style: TextStyle(color: Colors.white),),
@@ -145,6 +151,46 @@ class _AddEventScreenState extends State<AddEventScreen> {
       });
     }
   }
+
+  Future<void> saveEventAndGiftsLocally(String eventId,String currentUserID, String eventStatus) async {
+    try {
+      // Save event to the Events table
+      await DatabaseHelper.instance.insertEvent({
+        'id': eventId,
+        'name': _nameController.text,
+        'status': eventStatus,
+        'date': _selectedDate!.toIso8601String(),
+        'location': _locationController.text,
+        'description': _descriptionController.text,
+        'user_id': currentUserID, // Foreign key for the user
+      });
+
+      // Save gifts associated with the event to the Gifts table
+      for (var gift in _gifts) {
+        await DatabaseHelper.instance.insertGift({
+          'id': gift['id'],
+          'name': gift['name'],
+          'description': gift['description'],
+          'category': gift['category'],
+          'status': gift['status'],
+          'priceFrom': _giftPriceFromController,
+          'priceTo': _giftPriceToController,
+          'event_id': eventId, // Foreign key for the event
+        });
+      }
+
+      // Show success message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Event and gifts saved locally.')),
+      );
+    } catch (e) {
+      // Handle errors
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error saving event and gifts locally: $e')),
+      );
+    }
+  }
+
 
   @override
   Widget build(BuildContext context) {

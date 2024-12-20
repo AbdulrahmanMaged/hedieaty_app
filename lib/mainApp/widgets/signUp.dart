@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../screens/home_screen.dart'; // Import your home page
 import '../screens/welcomeScreen.dart'; // Import the Welcome Screen
-import '../../services/database/services/auth_service.dart';
+import 'package:hedieaty_app/services/database/firebase/auth_service.dart';
 
 class SignUpScreen extends StatefulWidget {
   @override

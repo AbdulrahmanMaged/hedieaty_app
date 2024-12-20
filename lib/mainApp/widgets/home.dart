@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:hedieaty_app/services/database/local/database_helper.dart';
+import 'package:hedieaty_app/services/database/sqlite/database_helper.dart';
 import 'package:hedieaty_app/mainApp/screens/friends_screen.dart';
 import 'package:hedieaty_app/mainApp/screens/my_gifts.dart';
 import 'package:hedieaty_app/mainApp/screens/my_profile.dart';
@@ -10,9 +10,9 @@ import 'package:hedieaty_app/mainApp/widgets/bottom_nav_bar.dart';
 import 'package:hedieaty_app/mainApp/widgets/top_home_bar.dart';
 import 'package:intl/intl.dart';
 
-import '../formScreens/EditAddInEvents.dart';
+import '../formScreens/editAddInEvents.dart';
 import '../screens/all_events_screen.dart';
-import '../formScreens//AddEventScreen.dart';
+import '../formScreens//addEventScreen.dart';
 import '../screens/user_event_screen.dart';
 
 class Home extends StatefulWidget {
@@ -227,7 +227,7 @@ class _HomeState extends State<Home> {
       debugDatabase();
     }
     else if (index == 6) {
-      debugDeleteTable('nothing');
+      debugDeleteTable('Events');
     }
   }
   void _showEventPicker(BuildContext context) async {

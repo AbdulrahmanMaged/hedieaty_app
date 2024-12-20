@@ -5,7 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:hedieaty_app/mainApp/screens/user_event_giftList.dart';
 import 'package:intl/intl.dart';
 
-import '../formScreens//AddEventScreen.dart';
+import '../formScreens//addEventScreen.dart';
 
 class EventsScreen extends StatefulWidget {
   final Function onEventAdded;
